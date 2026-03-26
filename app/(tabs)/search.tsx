@@ -18,10 +18,9 @@ import { SpotifyAlbum } from '@/types';
 import { useSpotify } from '@/hooks/useSpotify';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePlayback } from '@/hooks/usePlayback';
-import { useToast } from '@/hooks/useToast';
+import { useToastContext } from '@/contexts/ToastContext';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AlbumCard } from '@/components/AlbumCard';
-import { Toast } from '@/components/Toast';
 import {
   colors,
   typography,
@@ -45,7 +44,7 @@ export default function SearchScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { getBookmark } = useBookmarks();
-  const { toast, showToast } = useToast();
+  const { showToast } = useToastContext();
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Playing from bookmark', 'success'),
     onOpeningSpotify: () => showToast('Opening Spotify…', 'default'),
@@ -68,7 +67,7 @@ export default function SearchScreen() {
       setAlbums(results);
       setHasSearched(true);
     } catch {
-      showToast('Search failed. Please try again.', 'error');
+      showToast('Search failed — please try again', 'error');
     } finally {
       setSearching(false);
     }
@@ -173,7 +172,6 @@ export default function SearchScreen() {
         />
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
     </View>
   );
 }

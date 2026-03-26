@@ -47,4 +47,4 @@ NeedleDrop is a React Native / Expo app for bookmarking moments in Spotify album
 
 ## Current Status
 
-**Frontend Phase 3 complete.** All 5 backend phases done. Frontend: Login (Phase 1), Navigation Shell (Phase 2), Library & Search screens (Phase 3). Frontend Phase 4 next: Album Detail, Track Picker Modal, Bookmarks screen.
+**Frontend Phase 5 complete.** All backend phases done. All frontend phases done (1–5): Login, Navigation, Library & Search, Album Detail + Bookmarks, Polish. Phase 6 next: EAS build + App Store / Google Play submission.

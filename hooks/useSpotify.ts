@@ -8,7 +8,7 @@ import * as spotifyService from '@/services/spotify';
 import { SpotifyAlbum, SpotifyUser } from '@/types';
 
 export function useSpotify() {
-  const { token, logout } = useSpotifyAuth();
+  const { token, logout, ready } = useSpotifyAuth();
 
   const handleError = useCallback(async (err: unknown) => {
     if (err instanceof SpotifyAuthError) {
@@ -50,5 +50,5 @@ export function useSpotify() {
     }
   }, [token, handleError]);
 
-  return { getUserProfile, searchAlbums, getMyAlbums, getAlbum };
+  return { getUserProfile, searchAlbums, getMyAlbums, getAlbum, ready, logout };
 }

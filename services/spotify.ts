@@ -35,7 +35,7 @@ async function spotifyFetch<T>(
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers ?? {}),
     },
   });
@@ -63,9 +63,9 @@ export async function searchAlbums(
   query: string,
   token: string
 ): Promise<SpotifyAlbum[]> {
-  const params = new URLSearchParams({ q: query, type: 'album', limit: '12' });
-  const data   = await spotifyFetch<{ albums: { items: SpotifyAlbum[] } }>(
-    `/search?${params}`,
+  const q    = encodeURIComponent(query);
+  const data = await spotifyFetch<{ albums: { items: SpotifyAlbum[] } }>(
+    `/search?q=${q}&type=album`,
     token
   );
   return data.albums?.items ?? [];

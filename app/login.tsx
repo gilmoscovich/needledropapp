@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { useSpotifyAuth } from '@/hooks/useSpotifyAuth';
 import { colors, typography, spacing, radius, vinylGradient } from '@/constants/theme';
 
@@ -66,6 +67,7 @@ export default function LoginScreen() {
   });
 
   const handleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await login();
     } catch {

@@ -1,79 +1,116 @@
 // components/Toast.tsx
-// Floating notification bar — success / error / default.
-// Positioned just above the tab bar.
+// Global animated toast — reads from ToastContext, no props needed.
+// Rendered once in _layout.tsx above everything.
 
 import { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet } from 'react-native';
+import { Animated, Text, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ToastType } from '@/types';
+import { useToastContext } from '@/contexts/ToastContext';
 import { colors, typography, spacing, radius, TAB_BAR_HEIGHT } from '@/constants/theme';
+import { ToastType } from '@/types';
 
-interface ToastProps {
-  message: string;
-  type:    ToastType;
-}
-
-const ICON: Record<ToastType, React.ComponentProps<typeof MaterialIcons>['name']> = {
-  success: 'check-circle',
-  error:   'error',
-  default: 'info',
-};
-
-const BG: Record<ToastType, string> = {
-  success: colors.secondaryContainer,
-  error:   colors.errorContainer,
-  default: colors.surfaceContainerHigh,
-};
-
-const TEXT_COLOR: Record<ToastType, string> = {
-  success: colors.secondary,
-  error:   colors.error,
-  default: colors.onSurface,
-};
-
-export function Toast({ message, type }: ToastProps) {
-  const opacity   = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(12)).current;
+export function Toast() {
+  const { toast } = useToastContext();
+  const insets    = useSafeAreaInsets();
+  const anim      = useRef(new Animated.Value(0)).current;
+  const prevId    = useRef<number | null>(null);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(opacity,    { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }),
-      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, tension: 80, friction: 8 }),
-    ]).start();
-  }, [message]);
+    if (toast && toast.id !== prevId.current) {
+      prevId.current = toast.id;
+      Animated.spring(anim, {
+        toValue:  1,
+        tension:  100,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    } else if (!toast) {
+      Animated.timing(anim, {
+        toValue:  0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [toast]);
+
+  const translateY = anim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [40, 0],
+  });
+  const opacity = anim;
+
+  const type = toast?.type ?? 'default';
 
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
         styles.container,
-        { backgroundColor: BG[type] },
+        { bottom: TAB_BAR_HEIGHT + spacing.lg + insets.bottom },
         { opacity, transform: [{ translateY }] },
       ]}
     >
-      <MaterialIcons name={ICON[type]} size={16} color={TEXT_COLOR[type]} />
-      <Text style={[styles.text, { color: TEXT_COLOR[type] }]} numberOfLines={2}>
-        {message}
-      </Text>
+      <View style={[styles.pill, { backgroundColor: toastBg(type) }]}>
+        <MaterialIcons name={toastIcon(type)} size={16} color={toastIconColor(type)} />
+        <Text style={[styles.message, { color: toastTextColor(type) }]}>
+          {toast?.message}
+        </Text>
+      </View>
     </Animated.View>
   );
 }
 
+function toastIcon(type: ToastType): React.ComponentProps<typeof MaterialIcons>['name'] {
+  switch (type) {
+    case 'success': return 'check-circle';
+    case 'error':   return 'error-outline';
+    default:        return 'info-outline';
+  }
+}
+
+function toastBg(type: ToastType): string {
+  switch (type) {
+    case 'success': return colors.secondaryContainer;
+    case 'error':   return colors.errorContainer;
+    default:        return colors.surfaceContainerHighest;
+  }
+}
+
+function toastIconColor(type: ToastType): string {
+  switch (type) {
+    case 'success': return colors.secondary;
+    case 'error':   return colors.error;
+    default:        return colors.primary;
+  }
+}
+
+function toastTextColor(type: ToastType): string {
+  switch (type) {
+    case 'success': return colors.onSecondaryContainer;
+    case 'error':   return colors.error;
+    default:        return colors.onSurface;
+  }
+}
+
 const styles = StyleSheet.create({
   container: {
-    position:          'absolute',
-    bottom:            TAB_BAR_HEIGHT + spacing.sm,
-    left:              spacing.lg,
-    right:             spacing.lg,
+    position:   'absolute',
+    left:       spacing.lg,
+    right:      spacing.lg,
+    alignItems: 'center',
+    zIndex:     9999,
+  },
+  pill: {
     flexDirection:     'row',
     alignItems:        'center',
     gap:               spacing.sm,
-    paddingVertical:   spacing.md,
     paddingHorizontal: spacing.lg,
-    borderRadius:      radius.xxl,
-    zIndex:            999,
+    paddingVertical:   spacing.md,
+    borderRadius:      radius.full,
+    maxWidth:          360,
   },
-  text: {
+  message: {
     ...typography.bodyMd,
-    flex: 1,
   },
 });

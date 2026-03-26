@@ -4,6 +4,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import * as SplashScreen from 'expo-splash-screen';
+import { ToastProvider } from '@/contexts/ToastContext';
+import { Toast } from '@/components/Toast';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,7 +25,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <>
+    <ToastProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
@@ -31,12 +33,10 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="album/[id]"
-          options={{
-            presentation: 'card',
-            animation: 'slide_from_right',
-          }}
+          options={{ presentation: 'card', animation: 'slide_from_right' }}
         />
       </Stack>
-    </>
+      <Toast />
+    </ToastProvider>
   );
 }

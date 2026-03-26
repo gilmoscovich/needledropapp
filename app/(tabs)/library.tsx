@@ -9,20 +9,18 @@ import {
   StyleSheet,
   RefreshControl,
   Text,
-  ActivityIndicator,
   Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SpotifyAlbum, SpotifyUser } from '@/types';
 import { useSpotify } from '@/hooks/useSpotify';
-import { useSpotifyAuth } from '@/hooks/useSpotifyAuth';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePlayback } from '@/hooks/usePlayback';
-import { useToast } from '@/hooks/useToast';
+import { useToastContext } from '@/contexts/ToastContext';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AlbumCard } from '@/components/AlbumCard';
-import { Toast } from '@/components/Toast';
+import { SkeletonGrid } from '@/components/SkeletonCard';
 import {
   colors,
   typography,
@@ -36,7 +34,7 @@ const PADDING    = spacing.lg;
 export default function LibraryScreen() {
   const router  = useRouter();
   const spotify = useSpotify();
-  const { logout, ready } = useSpotifyAuth();
+  const { logout, ready } = spotify;
 
   const [albums,     setAlbums]     = useState<SpotifyAlbum[]>([]);
   const [user,       setUser]       = useState<SpotifyUser | null>(null);
@@ -45,7 +43,7 @@ export default function LibraryScreen() {
   const [error,      setError]      = useState<string | null>(null);
 
   const { bookmarks, getBookmark } = useBookmarks();
-  const { toast, showToast }       = useToast();
+  const { showToast }              = useToastContext();
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Playing from bookmark', 'success'),
     onOpeningSpotify: () => showToast('Opening Spotify…', 'default'),
@@ -95,14 +93,8 @@ export default function LibraryScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ScreenHeader
-          title="My Library"
-          subtitle={user ? `${bookmarks.length} bookmarks` : undefined}
-          avatarUrl={user?.images?.[0]?.url}
-        />
-        <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color={colors.secondary} />
-        </View>
+        <ScreenHeader title="My Library" subtitle="COLLECTION" />
+        <SkeletonGrid />
       </View>
     );
   }
@@ -175,7 +167,6 @@ export default function LibraryScreen() {
         }}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
     </View>
   );
 }
