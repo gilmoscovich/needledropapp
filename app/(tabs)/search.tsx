@@ -43,7 +43,7 @@ export default function SearchScreen() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { getBookmark } = useBookmarks();
+  const { getBookmark, getBookmarksForAlbum } = useBookmarks();
   const { showToast } = useToastContext();
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Playing from bookmark', 'success'),
@@ -157,11 +157,13 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => {
             const bookmark = getBookmark(item.id);
+            const albumBookmarks = getBookmarksForAlbum(item.id);
             return (
               <View style={styles.cardWrapper}>
                 <AlbumCard
                   album={item}
                   bookmark={bookmark}
+                  bookmarkCount={albumBookmarks.length}
                   onPress={() => handleAlbumPress(item)}
                   onPlay={bookmark ? () => handlePlay(item) : undefined}
                   isLoading={loadingAlbumId === item.id}

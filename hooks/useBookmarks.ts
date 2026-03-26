@@ -29,20 +29,27 @@ export function useBookmarks() {
     setBookmarks(updated);
   }, []);
 
-  // Delete
-  const deleteBookmark = useCallback(async (albumId: string): Promise<void> => {
-    const updated = await bookmarkService.deleteBookmark(albumId);
+  // Delete by trackUri
+  const deleteBookmark = useCallback(async (trackUri: string): Promise<void> => {
+    const updated = await bookmarkService.deleteBookmark(trackUri);
     setBookmarks(updated);
   }, []);
 
-  // Get single bookmark by albumId
+  // Get most recent bookmark for an album (for AlbumCard / play)
   const getBookmark = useCallback(
     (albumId: string): Bookmark | undefined =>
       bookmarks.find(b => b.albumId === albumId),
     [bookmarks]
   );
 
-  // Check if an album is already bookmarked
+  // Get all bookmarks for an album
+  const getBookmarksForAlbum = useCallback(
+    (albumId: string): Bookmark[] =>
+      bookmarks.filter(b => b.albumId === albumId),
+    [bookmarks]
+  );
+
+  // Check if an album has any bookmark
   const isBookmarked = useCallback(
     (albumId: string): boolean =>
       bookmarks.some(b => b.albumId === albumId),
@@ -56,6 +63,7 @@ export function useBookmarks() {
     saveBookmark,
     deleteBookmark,
     getBookmark,
+    getBookmarksForAlbum,
     isBookmarked,
   };
 }

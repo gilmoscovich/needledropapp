@@ -35,7 +35,7 @@ export async function persistBookmarks(bookmarks: Bookmark[]): Promise<void> {
  */
 export async function saveBookmark(bookmark: Bookmark): Promise<Bookmark[]> {
   const existing = await loadBookmarks();
-  const filtered = existing.filter(b => b.albumId !== bookmark.albumId);
+  const filtered = existing.filter(b => b.trackUri !== bookmark.trackUri);
   const updated  = [bookmark, ...filtered].sort((a, b) => b.savedAt - a.savedAt);
   await persistBookmarks(updated);
   return updated;
@@ -44,12 +44,12 @@ export async function saveBookmark(bookmark: Bookmark): Promise<Bookmark[]> {
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 /**
- * Delete the bookmark for a given albumId.
+ * Delete the bookmark for a given trackUri.
  * Returns the new full list.
  */
-export async function deleteBookmark(albumId: string): Promise<Bookmark[]> {
+export async function deleteBookmark(trackUri: string): Promise<Bookmark[]> {
   const existing = await loadBookmarks();
-  const updated  = existing.filter(b => b.albumId !== albumId);
+  const updated  = existing.filter(b => b.trackUri !== trackUri);
   await persistBookmarks(updated);
   return updated;
 }

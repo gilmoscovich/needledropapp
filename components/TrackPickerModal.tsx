@@ -24,17 +24,17 @@ import {
 } from '@/constants/theme';
 
 interface TrackPickerModalProps {
-  visible:          boolean;
-  album:            SpotifyAlbum;
-  existingBookmark?: Bookmark;
-  onClose:          () => void;
-  onSave:           (bookmark: Bookmark) => Promise<void>;
+  visible:           boolean;
+  album:             SpotifyAlbum;
+  existingBookmarks?: Bookmark[];
+  onClose:           () => void;
+  onSave:            (bookmark: Bookmark) => Promise<void>;
 }
 
 export function TrackPickerModal({
   visible,
   album,
-  existingBookmark,
+  existingBookmarks = [],
   onClose,
   onSave,
 }: TrackPickerModalProps) {
@@ -45,19 +45,22 @@ export function TrackPickerModal({
   const [saving,        setSaving]        = useState(false);
   const [tsError,       setTsError]       = useState('');
 
-  // Prefill with existing bookmark if editing
+  // On open: clear selection (let user pick fresh or re-pick a track)
   useEffect(() => {
     if (!visible) return;
-    if (existingBookmark) {
-      const track = album.tracks.items.find(t => t.uri === existingBookmark.trackUri);
-      setSelectedTrack(track ?? null);
-      setTimestamp(existingBookmark.timestamp ?? '');
-    } else {
-      setSelectedTrack(null);
-      setTimestamp('');
-    }
+    setSelectedTrack(null);
+    setTimestamp('');
     setTsError('');
-  }, [visible, existingBookmark]);
+  }, [visible]);
+
+  // When a track is selected, prefill its existing timestamp if one exists
+  const handleSelectTrack = (track: SpotifyTrack) => {
+    Haptics.selectionAsync();
+    setSelectedTrack(track);
+    const existing = existingBookmarks.find(b => b.trackUri === track.uri);
+    setTimestamp(existing?.timestamp ?? '');
+    setTsError('');
+  };
 
   const handleTimestampChange = (text: string) => {
     setTimestamp(text);
@@ -165,14 +168,12 @@ export function TrackPickerModal({
             keyboardShouldPersistTaps="handled"
           >
             {album.tracks.items.map((track, index) => {
-              const isSelected = selectedTrack?.uri === track.uri;
+              const isSelected  = selectedTrack?.uri === track.uri;
+              const hasBookmark = existingBookmarks.some(b => b.trackUri === track.uri);
               return (
                 <Pressable
                   key={track.uri}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setSelectedTrack(track);
-                  }}
+                  onPress={() => handleSelectTrack(track)}
                   style={[styles.trackRow, isSelected && styles.trackRowSelected]}
                 >
                   {isSelected && <View style={styles.trackActiveBorder} />}
@@ -185,12 +186,11 @@ export function TrackPickerModal({
                   >
                     {track.name}
                   </Text>
+                  {hasBookmark && !isSelected && (
+                    <MaterialCommunityIcons name="book-heart" size={14} color={colors.outlineVariant} />
+                  )}
                   {isSelected && (
-                    <MaterialCommunityIcons
-                      name="book-heart"
-                      size={16}
-                      color={colors.secondary}
-                    />
+                    <MaterialCommunityIcons name="book-heart" size={16} color={colors.secondary} />
                   )}
                 </Pressable>
               );

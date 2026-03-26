@@ -34,14 +34,14 @@ export default function AlbumDetailScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const { getAlbum, ready } = useSpotify();
-  const { getBookmark, isBookmarked, saveBookmark, deleteBookmark } = useBookmarks();
+  const { getBookmarksForAlbum, saveBookmark, deleteBookmark } = useBookmarks();
 
   const [album,      setAlbum]      = useState<SpotifyAlbum | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [showPicker, setShowPicker] = useState(false);
 
-  const existingBookmark = album ? getBookmark(album.id) : undefined;
-  const bookmarked       = album ? isBookmarked(album.id) : false;
+  const existingBookmarks = album ? getBookmarksForAlbum(album.id) : [];
+  const bookmarked        = existingBookmarks.length > 0;
 
   const { showToast } = useToastContext();
 
@@ -61,22 +61,21 @@ export default function AlbumDetailScreen() {
   }, [id, ready]);
 
   const handleDropNeedle = useCallback(async () => {
-    if (!existingBookmark || !album) return;
+    if (!existingBookmarks[0] || !album) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await resume(existingBookmark);
-  }, [existingBookmark, album, resume]);
+    await resume(existingBookmarks[0]);
+  }, [existingBookmarks, album, resume]);
 
-  const handleDeleteBookmark = () => {
-    if (!album) return;
+  const handleDeleteBookmark = (trackUri: string, trackName: string) => {
     Alert.alert(
       'Remove Bookmark',
-      'Remove the bookmark for this album?',
+      `Remove "${trackName}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => deleteBookmark(album.id),
+          onPress: () => deleteBookmark(trackUri),
         },
       ]
     );
@@ -128,20 +127,22 @@ export default function AlbumDetailScreen() {
           <Text style={styles.albumName}>{album.name}</Text>
           <Text style={styles.artistName}>{artist}</Text>
 
-          {/* Bookmark badge — if already bookmarked */}
-          {bookmarked && existingBookmark && (
-            <Pressable onPress={handleDeleteBookmark} style={styles.bookmarkBadge}>
+          {/* Bookmark badges — one per bookmarked track */}
+          {existingBookmarks.map(bm => (
+            <Pressable
+              key={bm.trackUri}
+              onPress={() => handleDeleteBookmark(bm.trackUri, bm.trackName)}
+              style={styles.bookmarkBadge}
+            >
               <MaterialCommunityIcons name="book-heart" size={14} color={colors.secondary} />
-              <Text style={styles.bookmarkBadgeText}>
-                {existingBookmark.trackName}
-              </Text>
-              {existingBookmark.timestamp && (
+              <Text style={styles.bookmarkBadgeText}>{bm.trackName}</Text>
+              {bm.timestamp && (
                 <View style={[styles.tsBadge, timestampBadgeStyle]}>
-                  <Text style={styles.tsBadgeText}>{existingBookmark.timestamp}</Text>
+                  <Text style={styles.tsBadgeText}>{bm.timestamp}</Text>
                 </View>
               )}
             </Pressable>
-          )}
+          ))}
 
           {/* Action buttons */}
           <View style={styles.actions}>
@@ -181,7 +182,7 @@ export default function AlbumDetailScreen() {
                 color={bookmarked ? colors.secondary : colors.primary}
               />
               <Text style={[styles.bookmarkBtnText, bookmarked && { color: colors.secondary }]}>
-                {bookmarked ? 'Update' : 'Bookmark'}
+                {bookmarked ? 'Add Another' : 'Bookmark'}
               </Text>
             </Pressable>
           </View>
@@ -194,21 +195,18 @@ export default function AlbumDetailScreen() {
             {album.tracks.items.length} TRACKS
           </Text>
 
-          {album.tracks.items.map((track, index) => (
-            <TrackRow
-              key={track.uri}
-              track={track}
-              index={index}
-              isBookmarked={
-                existingBookmark?.trackUri === track.uri
-              }
-              bookmarkedTimestamp={
-                existingBookmark?.trackUri === track.uri
-                  ? existingBookmark.timestamp
-                  : null
-              }
-            />
-          ))}
+          {album.tracks.items.map((track, index) => {
+            const bm = existingBookmarks.find(b => b.trackUri === track.uri);
+            return (
+              <TrackRow
+                key={track.uri}
+                track={track}
+                index={index}
+                isBookmarked={!!bm}
+                bookmarkedTimestamp={bm?.timestamp ?? null}
+              />
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -216,7 +214,7 @@ export default function AlbumDetailScreen() {
       <TrackPickerModal
         visible={showPicker}
         album={album}
-        existingBookmark={existingBookmark}
+        existingBookmarks={existingBookmarks}
         onClose={() => setShowPicker(false)}
         onSave={async (bookmark) => {
           await saveBookmark(bookmark);

@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Text,
   Pressable,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -42,7 +43,7 @@ export default function LibraryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
 
-  const { bookmarks, getBookmark } = useBookmarks();
+  const { bookmarks, getBookmark, getBookmarksForAlbum } = useBookmarks();
   const { showToast }              = useToastContext();
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Playing from bookmark', 'success'),
@@ -74,6 +75,24 @@ export default function LibraryScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      "You'll need to log back in to use NeedleDrop.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/login');
+          },
+        },
+      ]
+    );
   };
 
   const handleAlbumPress = (album: SpotifyAlbum) => {
@@ -134,7 +153,7 @@ export default function LibraryScreen() {
         title="My Library"
         subtitle={bookmarks.length > 0 ? `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}` : undefined}
         avatarUrl={user?.images?.[0]?.url}
-        onAvatarPress={logout}
+        onAvatarPress={handleLogout}
       />
 
       <FlatList
@@ -153,11 +172,13 @@ export default function LibraryScreen() {
         }
         renderItem={({ item }) => {
           const bookmark = getBookmark(item.id);
+          const albumBookmarks = getBookmarksForAlbum(item.id);
           return (
             <View style={styles.cardWrapper}>
               <AlbumCard
                 album={item}
                 bookmark={bookmark}
+                bookmarkCount={albumBookmarks.length}
                 onPress={() => handleAlbumPress(item)}
                 onPlay={bookmark ? () => handlePlay(item) : undefined}
                 isLoading={loadingAlbumId === item.id}

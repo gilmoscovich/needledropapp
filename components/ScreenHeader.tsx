@@ -29,12 +29,12 @@ export function ScreenHeader({
     <View style={[styles.bar, { paddingTop: insets.top + spacing.sm }]}>
       {/* Left: avatar + wordmark */}
       <View style={styles.left}>
-        {avatarUrl ? (
-          <Pressable onPress={onAvatarPress} style={styles.avatar}>
-            <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+        {(avatarUrl || onAvatarPress) && (
+          <Pressable onPress={onAvatarPress} style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}>
+            {avatarUrl && (
+              <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+            )}
           </Pressable>
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]} />
         )}
         <Text style={styles.wordmark}>NEEDLE DROP</Text>
       </View>

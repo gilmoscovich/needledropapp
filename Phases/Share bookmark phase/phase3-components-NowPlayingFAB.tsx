@@ -3,13 +3,13 @@
 // Tapping it fetches currently playing and opens the QuickBookmarkModal.
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { QuickBookmarkModal } from './QuickBookmarkModal';
 import { useCurrentlyPlaying, CurrentTrackInfo } from '@/hooks/useCurrentlyPlaying';
-import { colors, shadows, vinylGradient, TAB_BAR_HEIGHT, spacing, typography } from '@/constants/theme';
+import { colors, shadows, vinylGradient, TAB_BAR_HEIGHT, spacing } from '@/constants/theme';
 
 export function NowPlayingFAB() {
   const { fetchNowPlaying, loading } = useCurrentlyPlaying();
@@ -45,11 +45,12 @@ export function NowPlayingFAB() {
           {loading ? (
             <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
-            <MaterialCommunityIcons name="bookmark-music" size={22} color={colors.onPrimary} />
+            <MaterialCommunityIcons
+              name="bookmark-music"
+              size={24}
+              color={colors.onPrimary}
+            />
           )}
-          <Text style={styles.label}>
-            {loading ? 'Checking…' : 'Bookmark Now'}
-          </Text>
         </LinearGradient>
       </Pressable>
 
@@ -75,15 +76,10 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   gradient: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               spacing.sm,
-    height:            52,
-    paddingHorizontal: spacing.lg,
-    borderRadius:      999,
-  },
-  label: {
-    ...typography.titleMd,
-    color: colors.onPrimary,
+    width:          56,
+    height:         56,
+    borderRadius:   28,
+    alignItems:     'center',
+    justifyContent: 'center',
   },
 });

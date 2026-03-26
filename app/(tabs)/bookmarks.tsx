@@ -47,16 +47,16 @@ export default function BookmarksScreen() {
     resume(bm);
   }, [resume]);
 
-  const handleDelete = useCallback((albumId: string, albumName: string) => {
+  const handleDelete = useCallback((trackUri: string, trackName: string) => {
     Alert.alert(
       'Remove Bookmark',
-      `Remove "${albumName}"?`,
+      `Remove "${trackName}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => deleteBookmark(albumId),
+          onPress: () => deleteBookmark(trackUri),
         },
       ]
     );
@@ -78,7 +78,7 @@ export default function BookmarksScreen() {
     <View style={styles.container}>
       <FlatList
         data={bookmarks}
-        keyExtractor={item => item.albumId}
+        keyExtractor={item => item.trackUri}
         contentContainerStyle={[
           styles.list,
           { paddingBottom: TAB_BAR_HEIGHT + spacing.xl },
@@ -105,7 +105,7 @@ export default function BookmarksScreen() {
             isPlaying={loadingAlbumId === item.albumId}
             onPlay={() => handlePlay(item)}
             onPress={() => router.push(`/album/${item.albumId}`)}
-            onDelete={() => handleDelete(item.albumId, item.albumName)}
+            onDelete={() => handleDelete(item.trackUri, item.trackName)}
           />
         )}
       />

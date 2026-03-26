@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"error-container": "#93000a", "on-primary-container": "#bcb3a9", "on-secondary": "#432a1f", "on-background": "#e5e2e1", "on-error-container": "#ffdad6", "surface-tint": "#cec5ba", "on-surface": "#e5e2e1", outline: "#9c8e88", "secondary-fixed-dim": "#e6bead", secondary: "#e6bead", "surface-container-lowest": "#0e0e0e", "on-tertiary-fixed": "#28180d", "on-tertiary-container": "#cbaf9e", "surface-variant": "#353534", "inverse-surface": "#e5e2e1", "surface-dim": "#131313", "on-tertiary-fixed-variant": "#574335", "on-secondary-fixed": "#2c160b", "tertiary-container": "#574235", "on-secondary-fixed-variant": "#5c4033", "surface-container-highest": "#353534", background: "#131313", "surface-container": "#201f1f", "on-secondary-container": "#d4ad9c", "on-tertiary": "#3f2c20", tertiary: "#dec1af", "tertiary-fixed-dim": "#dec1af", "on-error": "#690005", "surface-bright": "#3a3939", "secondary-fixed": "#ffdbcc", primary: "#cec5ba", "on-primary-fixed-variant": "#4c463e", surface: "#131313", "inverse-primary": "#645d55", "on-primary": "#353028", "on-surface-variant": "#d4c3bd", "tertiary-fixed": "#fbddca", "inverse-on-surface": "#313030", error: "#ffb4ab", "primary-container": "#4b463e", "surface-container-low": "#1c1b1b", "primary-fixed": "#ebe1d6", "primary-fixed-dim": "#cec5ba", "secondary-container": "#5c4033", "outline-variant": "#504440", "surface-container-high": "#2a2a2a", "on-primary-fixed": "#1f1b14"}, fontFamily: {headline: ["Manrope"], body: ["Manrope"], label: ["Manrope"], display: "Manrope"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}}}};</script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24
+      }
+      .grainy-overlay {
+        background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDlyYC6SoPBJG9zHWO3TXsnMdMKzTdhgkabXeuhP8_BS8DYUq0ea6a0RkOz-0LclsCVMADfPZluVTgVWJ7Xp9yLK-aduKcqChpR8erCdBj4oWDlcuTmxgx2j-FAw9tieRaZ0Y4XafqNI7hR8ZMbRUDi4IyMrBUaeH2piKzCkpNSj3lldQmJMcQFgdSwmBh9sUfnsmZp-2PO8iBBV07GEAadg0MTxOgoDpcezgKFsmHKjZeBhJx2RymsxFEbhplvrTnlWtZ09MeOyXY);
+        opacity: 0.05;
+        pointer-events: none
+      }
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body selection:bg-secondary selection:text-on-secondary">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#131313]/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 bg-gradient-to-b from-[#131313] to-transparent shadow-none">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a stylish person with warm lighting and soft background bokeh in a high-end music studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNPtoT09lVj8Juj3rpmOCmoIT-NCR0i-QfzUnEDx6czl9mCW9vhUCq0sJH47MuwCzvnjEiOU7qxSrQm8s_d51ghr9QSejc5ovQ71OnOz0LJi03CHQ__hh7xTjhCBcICYREEmPmI42qlagtpMH01AMQ8qx2_fuoh9tPaEFALdWUraPqH0p7yUcABx_xai1uyfGvtW_eq_g8EiHET9lNOWKIkReH9PpzqcUFKqvnjgfz5DC_28c8REB8wwptrHhpiBbKtw3qMp9YOjw"/>
+</div>
+<span class="text-[#CEC5BA] font-headline font-extrabold text-xl tracking-tighter">NEEDLE DROP</span>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-[#CEC5BA] cursor-pointer hover:text-[#E6BEAD] transition-colors duration-300">search</span>
+<span class="material-symbols-outlined text-[#CEC5BA] cursor-pointer hover:text-[#E6BEAD] transition-colors duration-300">more_vert</span>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-5xl mx-auto">
+<!-- Hero Section -->
+<section class="flex flex-col md:flex-row gap-10 md:items-end mb-16 relative">
+<div class="relative group w-full md:w-80 lg:w-96 aspect-square shrink-0">
+<div class="absolute inset-0 bg-secondary/10 rounded-xl translate-x-3 translate-y-3 -z-10"></div>
+<div class="w-full h-full relative overflow-hidden rounded-xl shadow-2xl">
+<img alt="Album Cover" class="w-full h-full object-cover" data-alt="Abstract cinematic photography of vinyl record textures with deep shadows and warm amber light reflections, moody earth tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKgqvrtXLkffngXReBARF88mtv1noG2MtlaRx6M_FHJgi0iI8HSnB_ZW7rZUFPxwG9ml6a5VraMRVjHZX_dc6eVWUEGumOiPzYiOi3VGnCmwuK6ySLgH0gSQcNGGKuLnTWlN0iipJ0rfkQZLjFF92uB2wRqGiTKKAVC-Qzd2EXswMYx2aWsPYQzUzVWol5of5cHp4duq1iBigRiKPKB1SvLnYFe-ScCavLROt7IZMLGAnbVWjqWf8xeKcSbM6KnOPaY0VzfkBIjPE"/>
+<div class="absolute inset-0 grainy-overlay"></div>
+</div>
+</div>
+<div class="flex-grow space-y-4">
+<div class="space-y-1">
+<p class="font-label text-secondary tracking-[0.25em] uppercase text-[10px] font-bold">Limited Edition Vinyl</p>
+<h1 class="font-headline text-5xl md:text-7xl font-extrabold text-primary leading-[1] tracking-tighter">Echoes of the Soil</h1>
+<p class="font-headline text-2xl text-on-surface-variant/90 font-light mt-2">The Midnight Curators</p>
+</div>
+<div class="flex flex-wrap gap-4 pt-6">
+<button class="bg-primary text-on-primary px-8 py-3 rounded-full flex items-center gap-2 font-bold hover:opacity-90 active:scale-95 transition-all text-xs tracking-widest uppercase">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">album</span>
+                        Drop Needle
+                    </button>
+<button class="bg-surface-container-highest/20 border border-outline-variant/15 text-primary px-6 py-3 rounded-full flex items-center gap-2 font-bold hover:bg-surface-container-highest/40 transition-all text-xs tracking-widest uppercase">
+<span class="material-symbols-outlined">bookmark_add</span>
+                        Bookmark
+                    </button>
+</div>
+</div>
+</section>
+<!-- Description & Metadata -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20">
+<div class="md:col-span-2 space-y-6">
+<h3 class="font-headline text-2xl font-bold text-primary/90 tracking-tight">About this Pressing</h3>
+<p class="text-on-surface-variant/80 leading-relaxed font-body text-lg font-light">
+                    Recorded in a converted barn during the autumn of '23, "Echoes of the Soil" captures the raw, tactile resonance of acoustic instruments meeting vintage analog synthesizers. A cinematic journey through the quiet hours of the rural landscape, mastered specifically for 180g heavyweight vinyl.
+                </p>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl space-y-4 border border-outline-variant/5">
+<div class="flex justify-between border-b border-outline-variant/10 pb-2">
+<span class="text-outline text-xs uppercase tracking-[0.2em] font-label font-bold">Released</span>
+<span class="text-on-surface font-semibold font-body text-sm">Nov 2023</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/10 pb-2">
+<span class="text-outline text-xs uppercase tracking-[0.2em] font-label font-bold">Genre</span>
+<span class="text-on-surface font-semibold font-body text-sm">Experimental Folk</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline text-xs uppercase tracking-[0.2em] font-label font-bold">Format</span>
+<span class="text-on-surface font-semibold font-body text-sm">12" LP, 45 RPM</span>
+</div>
+</div>
+</section>
+<!-- Tracklist Section -->
+<section class="mb-24">
+<div class="flex items-end justify-between mb-10 border-b border-outline-variant/10 pb-6">
+<h2 class="font-headline text-4xl font-extrabold text-primary tracking-tighter">Tracklist</h2>
+<span class="text-outline text-[10px] font-label uppercase tracking-[0.3em] font-bold">12 TRACKS • 48:22</span>
+</div>
+<div class="space-y-1">
+<!-- Track 1 (Now Playing) -->
+<div class="group flex items-center justify-between p-5 rounded-xl bg-[#5C4033]/15 border-l-[4px] border-secondary transition-all">
+<div class="flex items-center gap-8">
+<span class="font-headline font-bold text-secondary text-2xl w-8">01</span>
+<div>
+<h4 class="text-secondary font-extrabold text-xl font-body tracking-tight">Hollow Ground</h4>
+<div class="flex items-center gap-2 text-secondary/70 text-[9px] uppercase tracking-[0.15em] font-label mt-1 font-bold">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+                                Now Playing • Dropped at 02:45
+                            </div>
+</div>
+</div>
+<div class="flex items-center gap-10">
+<span class="text-secondary/60 font-body text-sm tabular-nums font-semibold">4:12</span>
+<span class="material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity">favorite</span>
+</div>
+</div>
+<!-- Track 2 -->
+<div class="group flex items-center justify-between p-5 rounded-xl hover:bg-surface-container transition-all">
+<div class="flex items-center gap-8">
+<span class="font-headline font-bold text-outline/40 text-2xl w-8">02</span>
+<div>
+<h4 class="text-on-surface font-bold text-xl font-body tracking-tight">Amber Embers</h4>
+<p class="text-outline text-[9px] uppercase tracking-[0.2em] font-label mt-1 font-bold">Side A</p>
+</div>
+</div>
+<div class="flex items-center gap-10">
+<span class="text-outline font-body text-sm tabular-nums font-semibold">3:45</span>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">favorite</span>
+</div>
+</div>
+<!-- Track 3 -->
+<div class="group flex items-center justify-between p-5 rounded-xl hover:bg-surface-container transition-all">
+<div class="flex items-center gap-8">
+<span class="font-headline font-bold text-outline/40 text-2xl w-8">03</span>
+<div>
+<h4 class="text-on-surface font-bold text-xl font-body tracking-tight">The Silent Thaw</h4>
+<p class="text-outline text-[9px] uppercase tracking-[0.2em] font-label mt-1 font-bold">Side A</p>
+</div>
+</div>
+<div class="flex items-center gap-10">
+<span class="text-outline font-body text-sm tabular-nums font-semibold">5:20</span>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">favorite</span>
+</div>
+</div>
+<!-- Track 4 -->
+<div class="group flex items-center justify-between p-5 rounded-xl hover:bg-surface-container transition-all">
+<div class="flex items-center gap-8">
+<span class="font-headline font-bold text-outline/40 text-2xl w-8">04</span>
+<div>
+<h4 class="text-on-surface font-bold text-xl font-body tracking-tight">Root &amp; Branch</h4>
+<p class="text-outline text-[9px] uppercase tracking-[0.2em] font-label mt-1 font-bold">Side A</p>
+</div>
+</div>
+<div class="flex items-center gap-10">
+<span class="text-outline font-body text-sm tabular-nums font-semibold">3:18</span>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">favorite</span>
+</div>
+</div>
+<!-- Track 5 -->
+<div class="group flex items-center justify-between p-5 rounded-xl hover:bg-surface-container transition-all">
+<div class="flex items-center gap-8">
+<span class="font-headline font-bold text-outline/40 text-2xl w-8">05</span>
+<div>
+<h4 class="text-on-surface font-bold text-xl font-body tracking-tight">Distant Thunder</h4>
+<p class="text-outline text-[9px] uppercase tracking-[0.2em] font-label mt-1 font-bold">Side B</p>
+</div>
+</div>
+<div class="flex items-center gap-10">
+<span class="text-outline font-body text-sm tabular-nums font-semibold">6:04</span>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">favorite</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended / Similar -->
+<section class="mb-12">
+<h2 class="font-headline text-4xl font-extrabold text-primary mb-10 tracking-tighter">Related Curations</h2>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="space-y-4 group cursor-pointer">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high relative">
+<img alt="Similar Album" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Moody minimalist jazz album cover with soft focus shadows and warm brown paper texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHLaNQ0VFWuDF1F8chObw5cHXiI-1nz8pEd1KevHXXygXuTXeVq2CeQJTLOE7iaBXp3f_UsgPbIMV3RgtYHDSdj4HTaztGSRhfZI-cAEv_0i7AGO0Yc_VAMlOU8sASeqkwEpA2pKgcwehvhoNZuu48buc1coXRsYKbpW2yQxRDA35ojZbHnW4_KIfNLRElcMysI9au4KzvF_Kso-HD-QD_FivAKfumcfDBagEG3o2Z8awyOvOkUDa8Sff2m51h7qd6TiYEgAL5rEw"/>
+</div>
+<div>
+<h4 class="text-on-surface font-extrabold truncate font-body text-base tracking-tight">Midnight Sessions</h4>
+<p class="text-outline text-sm font-body font-light mt-0.5">The Grey Trio</p>
+</div>
+</div>
+<div class="space-y-4 group cursor-pointer">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high relative">
+<img alt="Similar Album" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Monochrome photograph of a forest floor with soft dappled sunlight, high grain editorial music cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfgK5jCz-1zq1tdfhAI-9UbPZOUWAnv3Vkn5zL4-dptL1ZowSz8_4MgfVuJj9-9hOjiOzLO-xh9g2YJ5sL5UiTe9b8ycIhCMtzMqZ7UvYilBdYeb2tAt1IMfjU6uMvLhgJv8KZtvdxa_vDLcvM8-Yq_vUafr7u6hFxdnyZYbuSqUf4-o4UA3KtuRpxiaNKBK3ZJvceX1HD_woldzUUtnPpTVDnO1DRtPt7qcmmjWFAmnd82vvH3eyyz5zCoi_BfdNHtcWVRscnWmg"/>
+</div>
+<div>
+<h4 class="text-on-surface font-extrabold truncate font-body text-base tracking-tight">Undergrowth</h4>
+<p class="text-outline text-sm font-body font-light mt-0.5">Sylvan Path</p>
+</div>
+</div>
+<div class="space-y-4 group cursor-pointer hidden md:block">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high relative">
+<img alt="Similar Album" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Close up of a vintage microphone with warm amber backlighting and dust motes in the air" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXjNjDlwCZDwcGbuPO5k6QlSgmgcvH30uzUYZnLCzbtsFITHD992z_MdKXAYaQFXqxgPfmblftj1azGgij0NvKppfAAHRQUwBP_sKTa3MF1eJ2PUUu859hvX6NVm0Chlj46U1iGW5DtRp2RAXUfoSoeamFoOpUt5uC-d0LqopuzNDfgSlFTdlhwIPQdB1Tm_HPz9vIuOwYvSB9tsKx1kcfb2u8-WGqi-EH-d1gd008bnxNtvOoL2piGIAkY6YmM7aGgUwrlV3JFfQ"/>
+</div>
+<div>
+<h4 class="text-on-surface font-extrabold truncate font-body text-base tracking-tight">Dust &amp; Ivory</h4>
+<p class="text-outline text-sm font-body font-light mt-0.5">A. Fletcher</p>
+</div>
+</div>
+<div class="space-y-4 group cursor-pointer hidden md:block">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high relative">
+<img alt="Similar Album" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Blurred landscape of a desert at twilight with deep indigo and tobacco tones, atmospheric music art" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBevDQotl_EYVM2zt810I9JnVcVIB4UrOT-9LvSyX_ZeLHrR1WPW_0vJe60afXM5bfxco8HTYtkuM3bT-5HGBk1A7uU5PUHNKZYA620ennsQEVZ-dvytT4J6c4BHzpksqjmbh6V5lsJrRYdSzRVUUxkHCY2uR3m0H4ctYCQAWCxQKIdHbfO--ETRolMZd1n-RUcNEkVRnDriuDqNouZE02pGTP7q8cIP_sbZoJ9MJFdn90aV5IQ2N99jiTWkTDzP7OB5jCZw1fTqnU"/>
+</div>
+<div>
+<h4 class="text-on-surface font-extrabold truncate font-body text-base tracking-tight">Blue Horizon</h4>
+<p class="text-outline text-sm font-body font-light mt-0.5">The Drifters</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-8 pb-8 pt-4 bg-[#201F1F]/90 backdrop-blur-2xl z-50 rounded-t-[2rem] border-t border-[#504440]/15 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-[#E6BEAD] bg-[#5C4033]/30 rounded-full px-4 py-1 active:translate-y-[-2px] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">library_music</span>
+<span class="font-label text-[9px] uppercase tracking-widest font-bold mt-1">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9C8E88] opacity-60 hover:opacity-100 transition-opacity active:translate-y-[-2px]" href="#">
+<span class="material-symbols-outlined">bookmark_heart</span>
+<span class="font-label text-[9px] uppercase tracking-widest font-bold mt-1">Bookmarks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9C8E88] opacity-60 hover:opacity-100 transition-opacity active:translate-y-[-2px]" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label text-[9px] uppercase tracking-widest font-bold mt-1">Search</span>
+</a>
+</nav>
+<!-- Now Playing Mini Bar -->
+<div class="fixed bottom-0 md:bottom-6 left-1/2 -translate-x-1/2 w-[90%] md:w-[600px] z-[60] mb-24 md:mb-0">
+<div class="bg-surface-container/85 backdrop-blur-3xl rounded-2xl p-3 flex items-center gap-4 shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/5">
+<div class="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+<img alt="Small Cover" class="w-full h-full object-cover" data-alt="Small thumbnail of a vinyl record with warm light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqSnAyKbtLyBj4ZPC1oQ3Z5XgWRcZcuLeTzS2LUtjwmnBy2r94TinIuSe5MD-oInhB3iWXBX5bOHX7ArF7tQgT19VkCbneDfQHO3oWfZmb412AJtdqwgdM3lN3gC0H_YjQC-424guap3M9ACCubPiZCithyOlx5H_YEok30gkDiGEy04_j4jw1hDbWmg8eNzTzDzHghyTM3iGNWoYeFRaN026_o-8sRWG5Z_KTcKE8r0rhZi_ND1XW8Gi7n_86lMmi7QR-CI1ANPs"/>
+</div>
+<div class="flex-grow min-w-0">
+<p class="text-on-surface font-extrabold text-sm truncate font-body tracking-tight">Hollow Ground</p>
+<p class="text-outline text-[9px] truncate font-label uppercase tracking-wider font-bold">The Midnight Curators</p>
+</div>
+<div class="flex items-center gap-4 px-2">
+<span class="material-symbols-outlined text-primary cursor-pointer hover:scale-110 transition-transform">skip_previous</span>
+<span class="material-symbols-outlined text-primary text-4xl cursor-pointer hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">pause_circle</span>
+<span class="material-symbols-outlined text-primary cursor-pointer hover:scale-110 transition-transform">skip_next</span>
+</div>
+<!-- Progress Bar Overlay -->
+<div class="absolute bottom-0 left-0 w-full h-1 bg-surface-container-highest/30 rounded-b-2xl overflow-hidden">
+<div class="h-full bg-secondary w-[40%]"></div>
+</div>
+</div>
+</div>
+</body></html>

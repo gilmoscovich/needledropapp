@@ -9,14 +9,15 @@ import { SpotifyAlbum, Bookmark } from '@/types';
 import { colors, typography, spacing, radius, shadows, vinylGradient, timestampBadgeStyle } from '@/constants/theme';
 
 interface AlbumCardProps {
-  album:      SpotifyAlbum;
-  bookmark?:  Bookmark;
-  onPress:    () => void;
-  onPlay?:    () => void;
-  isLoading?: boolean;
+  album:          SpotifyAlbum;
+  bookmark?:      Bookmark;
+  bookmarkCount?: number;
+  onPress:        () => void;
+  onPlay?:        () => void;
+  isLoading?:     boolean;
 }
 
-export function AlbumCard({ album, bookmark, onPress, onPlay, isLoading }: AlbumCardProps) {
+export function AlbumCard({ album, bookmark, bookmarkCount = 1, onPress, onPlay, isLoading }: AlbumCardProps) {
   const artUrl   = album.images?.[0]?.url ?? '';
   const artist   = album.artists?.[0]?.name ?? '';
 
@@ -38,9 +39,11 @@ export function AlbumCard({ album, bookmark, onPress, onPlay, isLoading }: Album
         {bookmark && (
           <View style={styles.bookmarkBadge}>
             <MaterialIcons name="bookmark" size={10} color={colors.secondary} />
-            {bookmark.timestamp && (
+            {bookmarkCount > 1 ? (
+              <Text style={styles.bookmarkTimestamp}>×{bookmarkCount}</Text>
+            ) : bookmark.timestamp ? (
               <Text style={styles.bookmarkTimestamp}>{bookmark.timestamp}</Text>
-            )}
+            ) : null}
           </View>
         )}
 
