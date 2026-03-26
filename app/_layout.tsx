@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts, Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import * as SplashScreen from 'expo-splash-screen';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { BookmarksProvider } from '@/contexts/BookmarksContext';
 import { Toast } from '@/components/Toast';
 import { colors } from '@/constants/theme';
 
@@ -25,6 +26,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <BookmarksProvider>
     <ToastProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
@@ -38,5 +40,6 @@ export default function RootLayout() {
       </Stack>
       <Toast />
     </ToastProvider>
+    </BookmarksProvider>
   );
 }
