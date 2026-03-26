@@ -13,6 +13,8 @@ const SCOPES = [
   'streaming',
   'user-read-playback-state',
   'user-modify-playback-state',
+  'user-read-currently-playing',
+  'user-read-recently-played',
 ];
 
 const TOKEN_KEY = 'nd_access_token';
