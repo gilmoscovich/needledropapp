@@ -37,12 +37,11 @@ export default function LibraryScreen() {
   const spotify = useSpotify();
   const { logout, ready } = spotify;
 
-  const [albums,     setAlbums]     = useState<SpotifyAlbum[]>([]);
-  const [user,       setUser]       = useState<SpotifyUser | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-
+  const [albums,       setAlbums]       = useState<SpotifyAlbum[]>([]);
+  const [user,         setUser]         = useState<SpotifyUser | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
   const { bookmarks, getBookmark, getBookmarksForAlbum } = useBookmarks();
   const { showToast }              = useToastContext();
   const { resume, loadingAlbumId } = usePlayback({

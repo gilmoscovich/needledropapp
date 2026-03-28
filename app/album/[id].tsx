@@ -12,19 +12,18 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TrackPickerModal } from '@/components/TrackPickerModal';
 import { useSpotify } from '@/hooks/useSpotify';
 import { useBookmarks } from '@/hooks/useBookmarks';
-import { usePlayback } from '@/hooks/usePlayback';
 import { useToastContext } from '@/contexts/ToastContext';
 import { SpotifyAlbum, SpotifyTrack, Bookmark } from '@/types';
 import {
   colors, typography, spacing, radius, shadows,
-  vinylGradient, timestampBadgeStyle,
+  timestampBadgeStyle,
 } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -34,10 +33,11 @@ export default function AlbumDetailScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const { getAlbum, ready } = useSpotify();
-  const { getBookmarksForAlbum, saveBookmark, deleteBookmark } = useBookmarks();
+  const { getBookmarksForAlbum, saveBookmark, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
 
   const [album,      setAlbum]      = useState<SpotifyAlbum | null>(null);
   const [loading,    setLoading]    = useState(true);
+  const [loadError,  setLoadError]  = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
   const existingBookmarks = album ? getBookmarksForAlbum(album.id) : [];
@@ -45,26 +45,33 @@ export default function AlbumDetailScreen() {
 
   const { showToast } = useToastContext();
 
-  const { resume, loadingAlbumId } = usePlayback({
-    onSuccess:        () => showToast('Now playing!', 'success'),
-    onOpeningSpotify: () => showToast('Opening Spotify…', 'default'),
-    onError:          (msg) => showToast(msg, 'error'),
-    onExpired:        () => showToast('Session expired', 'error'),
-  });
-
   useEffect(() => {
     if (!id || !ready) return;
     getAlbum(id)
       .then(setAlbum)
-      .catch(() => Alert.alert('Error', 'Could not load album.'))
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [id, ready]);
 
-  const handleDropNeedle = useCallback(async () => {
-    if (!existingBookmarks[0] || !album) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await resume(existingBookmarks[0]);
-  }, [existingBookmarks, album, resume]);
+  const handleAlbumFinished = useCallback(() => {
+    if (!album) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      'Album Finished?',
+      `Remove all ${existingBookmarks.length} bookmark${existingBookmarks.length !== 1 ? 's' : ''} for "${album.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove All',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteBookmarksForAlbum(album.id);
+            showToast('Album removed from your list', 'default');
+          },
+        },
+      ]
+    );
+  }, [album, existingBookmarks.length, deleteBookmarksForAlbum, showToast]);
 
   const handleDeleteBookmark = (trackUri: string, trackName: string) => {
     Alert.alert(
@@ -89,7 +96,24 @@ export default function AlbumDetailScreen() {
     );
   }
 
-  if (!album) return null;
+  if (loadError || !album) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Pressable
+          onPress={() => router.back()}
+          style={[styles.backBtn, { top: insets.top + spacing.sm }]}
+          hitSlop={12}
+        >
+          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+        </Pressable>
+        <MaterialIcons name="cloud-off" size={48} color={colors.outline} />
+        <Text style={styles.errorText}>Could not load album.</Text>
+        <Pressable onPress={() => router.back()} style={styles.errorBackBtn}>
+          <Text style={styles.errorBackText}>Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const artUrl  = album.images?.[0]?.url;
   const artist  = album.artists?.map(a => a.name).join(', ') ?? '';
@@ -129,11 +153,7 @@ export default function AlbumDetailScreen() {
 
           {/* Bookmark badges — one per bookmarked track */}
           {existingBookmarks.map(bm => (
-            <Pressable
-              key={bm.trackUri}
-              onPress={() => handleDeleteBookmark(bm.trackUri, bm.trackName)}
-              style={styles.bookmarkBadge}
-            >
+            <View key={bm.trackUri} style={styles.bookmarkBadge}>
               <MaterialCommunityIcons name="book-heart" size={14} color={colors.secondary} />
               <Text style={styles.bookmarkBadgeText}>{bm.trackName}</Text>
               {bm.timestamp && (
@@ -141,50 +161,35 @@ export default function AlbumDetailScreen() {
                   <Text style={styles.tsBadgeText}>{bm.timestamp}</Text>
                 </View>
               )}
-            </Pressable>
+              <Pressable
+                onPress={() => handleDeleteBookmark(bm.trackUri, bm.trackName)}
+                hitSlop={8}
+                style={styles.bookmarkBadgeDelete}
+              >
+                <MaterialIcons name="close" size={12} color={colors.outline} />
+              </Pressable>
+            </View>
           ))}
 
           {/* Action buttons */}
           <View style={styles.actions}>
-            {/* Drop Needle — only if bookmarked */}
-            {bookmarked ? (
-              <Pressable
-                onPress={handleDropNeedle}
-                disabled={loadingAlbumId === album.id}
-                style={styles.dropNeedleBtn}
-              >
-                <LinearGradient
-                  colors={vinylGradient.colors}
-                  start={vinylGradient.start}
-                  end={vinylGradient.end}
-                  style={styles.dropNeedleGradient}
-                >
-                  {loadingAlbumId === album.id ? (
-                    <ActivityIndicator color={colors.onPrimary} size="small" />
-                  ) : (
-                    <MaterialIcons name="album" size={18} color={colors.onPrimary} />
-                  )}
-                  <Text style={styles.dropNeedleText}>
-                    {loadingAlbumId === album.id ? 'Connecting…' : 'Drop Needle'}
-                  </Text>
-                </LinearGradient>
-              </Pressable>
-            ) : null}
-
-            {/* Bookmark button */}
             <Pressable
               onPress={() => setShowPicker(true)}
               style={[styles.bookmarkBtn, bookmarked && styles.bookmarkBtnActive]}
             >
-              <MaterialCommunityIcons
-                name={bookmarked ? 'book-heart' : 'book-heart-outline'}
-                size={18}
-                color={bookmarked ? colors.secondary : colors.primary}
-              />
-              <Text style={[styles.bookmarkBtnText, bookmarked && { color: colors.secondary }]}>
+              <Text style={styles.bookmarkBtnText}>
                 {bookmarked ? 'Add Another' : 'Bookmark'}
               </Text>
             </Pressable>
+
+            {bookmarked && (
+              <Pressable
+                onPress={handleAlbumFinished}
+                style={({ pressed }) => [styles.albumFinishedBtn, pressed && { opacity: 0.8 }]}
+              >
+                <Text style={styles.albumFinishedBtnText}>Album Finished</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -329,6 +334,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems:      'center',
     justifyContent:  'center',
+    gap:             spacing.lg,
+  },
+  errorText: {
+    ...typography.bodyMd,
+    color: colors.outline,
+  },
+  errorBackBtn: {
+    paddingVertical:   spacing.sm,
+    paddingHorizontal: spacing.xl,
+    backgroundColor:   colors.surfaceContainerHigh,
+    borderRadius:      999,
+  },
+  errorBackText: {
+    ...typography.labelLg,
+    color: colors.onSurface,
   },
   heroWrapper: {
     width:  '100%',
@@ -373,11 +393,18 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
   },
   bookmarkBadge: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             spacing.sm,
-    alignSelf:       'flex-start',
-    marginTop:       spacing.xs,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               spacing.sm,
+    alignSelf:         'flex-start',
+    marginTop:         spacing.xs,
+    backgroundColor:   'rgba(92,64,51,0.10)',
+    borderRadius:      999,
+    paddingVertical:   4,
+    paddingHorizontal: spacing.sm,
+  },
+  bookmarkBadgeDelete: {
+    marginLeft: 2,
   },
   bookmarkBadgeText: {
     ...typography.labelLg,
@@ -393,46 +420,43 @@ const styles = StyleSheet.create({
     color: colors.secondary,
   },
   actions: {
-    flexDirection:  'row',
-    gap:            spacing.md,
-    marginTop:      spacing.md,
-    marginBottom:   spacing.lg,
-  },
-  dropNeedleBtn: {
-    flex:         1,
-    borderRadius: radius.full,
-    overflow:     'hidden',
-    ...shadows.card,
-  },
-  dropNeedleGradient: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    justifyContent:  'center',
-    gap:             spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  dropNeedleText: {
-    ...typography.titleMd,
-    color: colors.onPrimary,
+    flexDirection: 'column',
+    gap:           spacing.sm,
+    marginTop:     spacing.md,
+    marginBottom:  spacing.lg,
   },
   bookmarkBtn: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             spacing.sm,
-    borderRadius:    radius.full,
-    paddingVertical: spacing.md,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               spacing.sm,
+    borderRadius:      radius.full,
+    paddingVertical:   spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderWidth:     1,
-    borderColor:     colors.outlineVariant,
+    backgroundColor:   colors.pillBg,
   },
   bookmarkBtnActive: {
-    borderColor:     colors.secondary,
-    backgroundColor: 'rgba(92,64,51,0.12)',
+    backgroundColor: colors.pillBg,
   },
   bookmarkBtnText: {
     ...typography.titleMd,
-    color: colors.primary,
+    color: colors.onPill,
+  },
+  albumFinishedBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               spacing.sm,
+    borderRadius:      radius.full,
+    paddingVertical:   spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor:   colors.surfaceContainerHigh,
+    borderWidth:       1,
+    borderColor:       colors.errorContainer,
+  },
+  albumFinishedBtnText: {
+    ...typography.titleMd,
+    color: colors.error,
   },
   tracklist: {
     paddingHorizontal: 0,

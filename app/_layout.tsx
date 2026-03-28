@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { BookmarksProvider } from '@/contexts/BookmarksContext';
 import { Toast } from '@/components/Toast';
@@ -26,6 +27,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <BookmarksProvider>
     <ToastProvider>
       <StatusBar style="light" />
@@ -41,5 +43,6 @@ export default function RootLayout() {
       <Toast />
     </ToastProvider>
     </BookmarksProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -3,16 +3,17 @@
 // Tapping it fetches currently playing and opens the QuickBookmarkModal.
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Pressable, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { QuickBookmarkModal } from './QuickBookmarkModal';
 import { useCurrentlyPlaying, CurrentTrackInfo } from '@/hooks/useCurrentlyPlaying';
-import { colors, shadows, vinylGradient, TAB_BAR_HEIGHT, spacing, typography } from '@/constants/theme';
+import { useToastContext } from '@/contexts/ToastContext';
+import { colors, shadows, TAB_BAR_HEIGHT, spacing, typography } from '@/constants/theme';
 
 export function NowPlayingFAB() {
   const { fetchNowPlaying, loading } = useCurrentlyPlaying();
+  const { showToast } = useToastContext();
   const [trackInfo,    setTrackInfo]    = useState<CurrentTrackInfo | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -23,6 +24,8 @@ export function NowPlayingFAB() {
     if (info) {
       setTrackInfo(info);
       setModalVisible(true);
+    } else {
+      showToast('Nothing playing right now', 'default');
     }
   };
 
@@ -36,21 +39,16 @@ export function NowPlayingFAB() {
           pressed && { transform: [{ scale: 0.92 }], opacity: 0.9 },
         ]}
       >
-        <LinearGradient
-          colors={vinylGradient.colors}
-          start={vinylGradient.start}
-          end={vinylGradient.end}
-          style={styles.gradient}
-        >
+        <View style={styles.gradient}>
           {loading ? (
-            <ActivityIndicator color={colors.onPrimary} size="small" />
+            <ActivityIndicator color={colors.onPill} size="small" />
           ) : (
-            <MaterialCommunityIcons name="bookmark-music" size={22} color={colors.onPrimary} />
+            <MaterialCommunityIcons name="bookmark-music" size={22} color={colors.onPill} />
           )}
           <Text style={styles.label}>
             {loading ? 'Checking…' : 'Bookmark Now'}
           </Text>
-        </LinearGradient>
+        </View>
       </Pressable>
 
       {trackInfo && (
@@ -81,9 +79,10 @@ const styles = StyleSheet.create({
     height:            52,
     paddingHorizontal: spacing.lg,
     borderRadius:      999,
+    backgroundColor:   colors.pillBg,
   },
   label: {
     ...typography.titleMd,
-    color: colors.onPrimary,
+    color: colors.onPill,
   },
 });

@@ -13,7 +13,8 @@ interface BookmarksContextValue {
   bookmarkCount:        number;
   loading:              boolean;
   saveBookmark:         (bookmark: Bookmark) => Promise<void>;
-  deleteBookmark:       (trackUri: string) => Promise<void>;
+  deleteBookmark:          (trackUri: string) => Promise<void>;
+  deleteBookmarksForAlbum: (albumId: string) => Promise<void>;
   getBookmark:          (albumId: string) => Bookmark | undefined;
   getBookmarksForAlbum: (albumId: string) => Bookmark[];
   isBookmarked:         (albumId: string) => boolean;
@@ -45,6 +46,11 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     setBookmarks(updated);
   }, []);
 
+  const deleteBookmarksForAlbum = useCallback(async (albumId: string): Promise<void> => {
+    const updated = await bookmarkService.deleteBookmarksForAlbum(albumId);
+    setBookmarks(updated);
+  }, []);
+
   const getBookmark = useCallback(
     (albumId: string) => bookmarks.find(b => b.albumId === albumId),
     [bookmarks]
@@ -67,6 +73,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       loading,
       saveBookmark,
       deleteBookmark,
+      deleteBookmarksForAlbum,
       getBookmark,
       getBookmarksForAlbum,
       isBookmarked,

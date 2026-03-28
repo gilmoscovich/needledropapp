@@ -63,6 +63,17 @@ export async function getBookmarkByAlbumId(
   return bookmarks.find(b => b.albumId === albumId);
 }
 
+/**
+ * Delete all bookmarks for a given albumId in one atomic operation.
+ * Returns the new full list.
+ */
+export async function deleteBookmarksForAlbum(albumId: string): Promise<Bookmark[]> {
+  const existing = await loadBookmarks();
+  const updated  = existing.filter(b => b.albumId !== albumId);
+  await persistBookmarks(updated);
+  return updated;
+}
+
 // ─── Clear all (for dev/testing) ──────────────────────────────────────────────
 
 export async function clearAllBookmarks(): Promise<void> {

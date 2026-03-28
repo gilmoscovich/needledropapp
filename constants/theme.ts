@@ -30,6 +30,9 @@ export const colors = {
   secondaryContainer:      '#5c4033',  // dark espresso — active tab pill
   onSecondaryContainer:    '#d4ad9c',
 
+  pillBg:                  '#3D2B1F',  // solid fill for all pill/action buttons
+  onPill:                  '#EAE0D5',  // text / icon ON pill buttons
+
   tertiary:                '#dec1af',
   tertiaryContainer:       '#574235',
 
@@ -41,15 +44,15 @@ export const colors = {
 // Vinyl gradient — used for all play buttons
 // Apply via expo-linear-gradient as a circle
 export const vinylGradient = {
-  colors:  ['#e6bead', '#5c4033'] as const,
+  colors:  ['#7a5544', '#5c4033'] as const,
   start:   { x: 0.2, y: 0.2 },
   end:     { x: 0.8, y: 0.8 },
 };
 
 // Timestamp badge — warm brown tint
 export const timestampBadgeStyle = {
-  backgroundColor: 'rgba(92, 64, 51, 0.15)',
-  borderColor:     'rgba(230, 190, 173, 0.2)',
+  backgroundColor: 'rgba(92, 64, 51, 0.40)',
+  borderColor:     'rgba(122, 85, 68, 0.4)',
   borderWidth:     1,
 };
 

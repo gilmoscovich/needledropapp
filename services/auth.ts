@@ -49,7 +49,8 @@ export async function buildAuthRequest(): Promise<{
   url: string;
   verifier: string;
 }> {
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'needledrop' });
+  const redirectUri = AuthSession.makeRedirectUri({ native: 'needledrop://callback' });
+  console.log('[auth] redirectUri:', redirectUri);
   const verifier   = await generateCodeVerifier();
   const challenge  = await generateCodeChallenge(verifier);
 
@@ -74,7 +75,7 @@ export async function exchangeCodeForToken(
   code: string,
   verifier: string
 ): Promise<string> {
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'needledrop' });
+  const redirectUri = AuthSession.makeRedirectUri({ native: 'needledrop://callback' });
 
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',

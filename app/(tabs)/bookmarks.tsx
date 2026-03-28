@@ -1,20 +1,21 @@
 // app/(tabs)/bookmarks.tsx
-import { useCallback } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   FlatList,
   Pressable,
   StyleSheet,
-  Alert,
   ActivityIndicator,
-  Dimensions,
+  ActionSheetIOS,
+  Platform,
+  Alert,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePlayback } from '@/hooks/usePlayback';
@@ -23,17 +24,35 @@ import { SkeletonBookmarkCard } from '@/components/SkeletonBookmarkCard';
 import { Bookmark } from '@/types';
 import {
   colors, typography, spacing, radius, shadows,
-  vinylGradient, timestampBadgeStyle, TAB_BAR_HEIGHT,
+  TAB_BAR_HEIGHT,
 } from '@/constants/theme';
 
-const { width } = Dimensions.get('window');
+interface AlbumGroup extends Bookmark {
+  bookmarks: Bookmark[];
+  count:     number;
+}
 
 export default function BookmarksScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { bookmarks, loading, deleteBookmark } = useBookmarks();
-
+  const { bookmarks, loading, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
   const { showToast } = useToastContext();
+
+  // Group flat bookmarks list by albumId — one card per album
+  const albumGroups = useMemo<AlbumGroup[]>(() => {
+    const map: Record<string, Bookmark[]> = {};
+    for (const bm of bookmarks) {
+      if (!map[bm.albumId]) map[bm.albumId] = [];
+      map[bm.albumId].push(bm);
+    }
+    return Object.values(map)
+      .map(group => ({
+        ...group.sort((a, b) => b.savedAt - a.savedAt)[0], // album-level fields from most recent
+        bookmarks: group.sort((a, b) => b.savedAt - a.savedAt),
+        count:     group.length,
+      }))
+      .sort((a, b) => b.savedAt - a.savedAt);
+  }, [bookmarks]);
 
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Now playing!', 'success'),
@@ -42,33 +61,67 @@ export default function BookmarksScreen() {
     onExpired:        () => showToast('Session expired — please log in again', 'error'),
   });
 
-  const handlePlay = useCallback((bm: Bookmark) => {
+  const handlePlay = useCallback((group: AlbumGroup) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    resume(bm);
+    resume(group.bookmarks[0]); // most-recently-saved bookmark
   }, [resume]);
 
-  const handleDelete = useCallback((trackUri: string, trackName: string) => {
-    Alert.alert(
-      'Remove Bookmark',
-      `Remove "${trackName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
+  const handleDelete = useCallback((group: AlbumGroup) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+    if (group.count === 1) {
+      deleteBookmark(group.bookmarks[0].trackUri);
+      return;
+    }
+
+    // Multiple bookmarks — let user pick which one to remove
+    const trackNames = group.bookmarks.map(bm => bm.trackName);
+    const options    = [...trackNames, 'Remove All', 'Cancel'];
+    const removeAllIndex = options.length - 2;
+    const cancelIndex    = options.length - 1;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
         {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => deleteBookmark(trackUri),
+          title:                `Remove bookmark from "${group.albumName}"`,
+          options,
+          destructiveButtonIndex: removeAllIndex,
+          cancelButtonIndex:      cancelIndex,
         },
-      ]
-    );
-  }, [deleteBookmark]);
+        (index) => {
+          if (index === cancelIndex) return;
+          if (index === removeAllIndex) {
+            deleteBookmarksForAlbum(group.albumId);
+          } else {
+            deleteBookmark(group.bookmarks[index].trackUri);
+          }
+        }
+      );
+    } else {
+      // Android fallback
+      Alert.alert(
+        `Remove from "${group.albumName}"`,
+        'Which bookmark do you want to remove?',
+        [
+          ...group.bookmarks.map(bm => ({
+            text:    bm.trackName,
+            onPress: () => deleteBookmark(bm.trackUri),
+          })),
+          {
+            text:    'Remove All',
+            style:   'destructive' as const,
+            onPress: () => deleteBookmarksForAlbum(group.albumId),
+          },
+          { text: 'Cancel', style: 'cancel' as const },
+        ]
+      );
+    }
+  }, [deleteBookmark, deleteBookmarksForAlbum]);
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
-          <Text style={styles.headerSub}>PERSONAL ARCHIVES</Text>
-          <Text style={styles.headerTitle}>Sonic Timestamps</Text>
-        </View>
+        <View style={{ paddingTop: insets.top + spacing.lg }} />
         {[0, 1, 2, 3].map(i => <SkeletonBookmarkCard key={i} />)}
       </View>
     );
@@ -77,35 +130,28 @@ export default function BookmarksScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={bookmarks}
-        keyExtractor={item => item.trackUri}
+        data={albumGroups}
+        keyExtractor={item => item.albumId}
         contentContainerStyle={[
           styles.list,
-          { paddingBottom: TAB_BAR_HEIGHT + spacing.xl },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: TAB_BAR_HEIGHT + spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-            <Text style={styles.headerSub}>PERSONAL ARCHIVES</Text>
-            <Text style={styles.headerTitle}>Sonic Timestamps</Text>
-            <Text style={styles.headerBody}>
-              Your curated collection of moments captured in time.
+          albumGroups.length > 0 ? (
+            <Text style={[styles.countLabel, { paddingHorizontal: spacing.lg, marginBottom: spacing.sm }]}>
+              {albumGroups.length} ALBUM{albumGroups.length !== 1 ? 'S' : ''}
             </Text>
-            {bookmarks.length > 0 && (
-              <Text style={styles.countLabel}>
-                {bookmarks.length} ACTIVE BOOKMARK{bookmarks.length !== 1 ? 'S' : ''}
-              </Text>
-            )}
-          </View>
+          ) : null
         }
         ListEmptyComponent={<BookmarksEmpty onSearch={() => router.push('/(tabs)/search')} />}
         renderItem={({ item }) => (
-          <BookmarkCard
-            bookmark={item}
+          <SwipeableAlbumCard
+            group={item}
             isPlaying={loadingAlbumId === item.albumId}
             onPlay={() => handlePlay(item)}
             onPress={() => router.push(`/album/${item.albumId}`)}
-            onDelete={() => handleDelete(item.trackUri, item.trackName)}
+            onDelete={() => handleDelete(item)}
           />
         )}
       />
@@ -113,14 +159,44 @@ export default function BookmarksScreen() {
   );
 }
 
-function BookmarkCard({
-  bookmark,
+function SwipeableAlbumCard(props: {
+  group:     AlbumGroup;
+  isPlaying: boolean;
+  onPlay:    () => void;
+  onPress:   () => void;
+  onDelete:  () => void;
+}) {
+  const swipeRef = useRef<Swipeable>(null);
+
+  const renderRightActions = () => (
+    <Pressable
+      onPress={() => { swipeRef.current?.close(); props.onDelete(); }}
+      style={cardStyles.deleteAction}
+    >
+      <MaterialIcons name="delete" size={22} color="#fff" />
+      <Text style={cardStyles.deleteActionText}>Remove</Text>
+    </Pressable>
+  );
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={60}
+      overshootRight={false}
+    >
+      <AlbumCard {...props} />
+    </Swipeable>
+  );
+}
+
+function AlbumCard({
+  group,
   isPlaying,
   onPlay,
   onPress,
-  onDelete,
 }: {
-  bookmark:  Bookmark;
+  group:     AlbumGroup;
   isPlaying: boolean;
   onPlay:    () => void;
   onPress:   () => void;
@@ -131,54 +207,45 @@ function BookmarkCard({
       cardStyles.card,
       pressed && { opacity: 0.9 },
     ]}>
-      {/* Album art */}
+      {/* Album art + count badge */}
       <View style={cardStyles.artWrapper}>
-        {bookmark.art ? (
-          <Image source={{ uri: bookmark.art }} style={cardStyles.art} contentFit="cover" />
+        {group.art ? (
+          <Image source={{ uri: group.art }} style={cardStyles.art} contentFit="cover" />
         ) : (
           <View style={[cardStyles.art, cardStyles.artPlaceholder]} />
+        )}
+        {group.count > 1 && (
+          <View style={cardStyles.countBadge}>
+            <Text style={cardStyles.countBadgeText}>{group.count}</Text>
+          </View>
         )}
       </View>
 
       {/* Text content */}
       <View style={cardStyles.content}>
-        <Text style={cardStyles.albumName} numberOfLines={1}>{bookmark.albumName}</Text>
-        <Text style={cardStyles.trackName} numberOfLines={1}>
-          {bookmark.trackNum}. {bookmark.trackName}
-        </Text>
-        <Text style={cardStyles.artist} numberOfLines={1}>{bookmark.artist}</Text>
-
-        {/* Timestamp badge */}
-        {bookmark.timestamp && (
-          <View style={[cardStyles.tsBadge, timestampBadgeStyle]}>
-            <MaterialIcons name="schedule" size={10} color={colors.secondary} />
-            <Text style={cardStyles.tsText}>{bookmark.timestamp}</Text>
-          </View>
+        <Text style={cardStyles.albumName} numberOfLines={1}>{group.albumName}</Text>
+        <Text style={cardStyles.artist} numberOfLines={1}>{group.artist}</Text>
+        {group.count > 1 && (
+          <Text style={cardStyles.trackHint} numberOfLines={1}>
+            {group.bookmarks[0].trackName}
+          </Text>
+        )}
+        {group.count === 1 && (
+          <Text style={cardStyles.trackHint} numberOfLines={1}>
+            {group.bookmarks[0].trackNum}. {group.bookmarks[0].trackName}
+          </Text>
         )}
       </View>
 
-      {/* Actions */}
-      <View style={cardStyles.actions}>
-        {/* Play button */}
-        <Pressable onPress={onPlay} disabled={isPlaying} style={cardStyles.playBtn}>
-          <LinearGradient
-            colors={vinylGradient.colors}
-            start={vinylGradient.start}
-            end={vinylGradient.end}
-            style={cardStyles.playGradient}
-          >
-            {isPlaying
-              ? <ActivityIndicator color={colors.onPrimary} size="small" />
-              : <MaterialIcons name="play-arrow" size={20} color={colors.onPrimary} />
-            }
-          </LinearGradient>
-        </Pressable>
-
-        {/* More / delete */}
-        <Pressable onPress={onDelete} style={cardStyles.deleteBtn} hitSlop={8}>
-          <MaterialIcons name="more-vert" size={18} color={colors.outline} />
-        </Pressable>
-      </View>
+      {/* Play button */}
+      <Pressable onPress={onPlay} disabled={isPlaying} style={cardStyles.playBtn}>
+        <View style={cardStyles.playGradient}>
+          {isPlaying
+            ? <ActivityIndicator color={colors.onPill} size="small" />
+            : <MaterialIcons name="play-arrow" size={20} color={colors.onPill} />
+          }
+        </View>
+      </Pressable>
     </Pressable>
   );
 }
@@ -186,7 +253,7 @@ function BookmarkCard({
 function BookmarksEmpty({ onSearch }: { onSearch: () => void }) {
   return (
     <View style={emptyStyles.container}>
-      <MaterialCommunityIcons name="book-heart-outline" size={64} color={colors.outlineVariant} />
+      <MaterialIcons name="bookmark-border" size={64} color={colors.outlineVariant} />
       <Text style={emptyStyles.title}>No bookmarks yet</Text>
       <Text style={emptyStyles.body}>
         Find an album, pick a track, and drop the needle.
@@ -200,10 +267,10 @@ function BookmarksEmpty({ onSearch }: { onSearch: () => void }) {
 
 const emptyStyles = StyleSheet.create({
   container: {
-    alignItems:    'center',
-    paddingTop:    spacing.xxxl,
-    paddingBottom: spacing.xl,
-    gap:           spacing.md,
+    alignItems:        'center',
+    paddingTop:        spacing.xxxl,
+    paddingBottom:     spacing.xl,
+    gap:               spacing.md,
     paddingHorizontal: spacing.xxl,
   },
   title: {
@@ -216,11 +283,11 @@ const emptyStyles = StyleSheet.create({
     textAlign: 'center',
   },
   btn: {
-    marginTop:       spacing.sm,
-    paddingVertical: spacing.md,
+    marginTop:         spacing.sm,
+    paddingVertical:   spacing.md,
     paddingHorizontal: spacing.xl,
-    borderRadius:    radius.full,
-    backgroundColor: colors.primaryContainer,
+    borderRadius:      radius.full,
+    backgroundColor:   colors.primaryContainer,
   },
   btnText: {
     ...typography.titleMd,
@@ -230,16 +297,17 @@ const emptyStyles = StyleSheet.create({
 
 const cardStyles = StyleSheet.create({
   card: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    marginHorizontal:  spacing.lg,
-    marginBottom:      spacing.sm,
-    padding:           spacing.md,
-    borderRadius:      radius.xl,
-    backgroundColor:   colors.surfaceContainer,
-    gap:               spacing.md,
+    flexDirection:    'row',
+    alignItems:       'center',
+    marginHorizontal: spacing.lg,
+    marginBottom:     spacing.sm,
+    padding:          spacing.md,
+    borderRadius:     radius.xl,
+    backgroundColor:  colors.surfaceContainer,
+    gap:              spacing.md,
   },
   artWrapper: {
+    position: 'relative',
     ...shadows.albumArt,
   },
   art: {
@@ -250,6 +318,26 @@ const cardStyles = StyleSheet.create({
   artPlaceholder: {
     backgroundColor: colors.surfaceContainerHigh,
   },
+  countBadge: {
+    position:        'absolute',
+    top:             -6,
+    right:           -6,
+    minWidth:        22,
+    height:          22,
+    borderRadius:    11,
+    backgroundColor: colors.secondary,
+    alignItems:      'center',
+    justifyContent:  'center',
+    paddingHorizontal: 4,
+    borderWidth:     2,
+    borderColor:     colors.surfaceContainer,
+  },
+  countBadgeText: {
+    ...typography.labelSm,
+    color:      colors.background,
+    fontWeight: '800',
+    lineHeight: 14,
+  },
   content: {
     flex: 1,
     gap:  2,
@@ -258,32 +346,28 @@ const cardStyles = StyleSheet.create({
     ...typography.titleMd,
     color: colors.onSurface,
   },
-  trackName: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-  },
   artist: {
     ...typography.labelLg,
     color:         colors.outline,
     letterSpacing: 0.5,
   },
-  tsBadge: {
-    flexDirection:   'row',
+  trackHint: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+  },
+  deleteAction: {
+    justifyContent:  'center',
     alignItems:      'center',
+    width:           80,
+    marginBottom:    spacing.sm,
+    marginRight:     spacing.lg,
+    borderRadius:    radius.xl,
+    backgroundColor: '#c0392b',
     gap:             4,
-    alignSelf:       'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical:  2,
-    borderRadius:    radius.full,
-    marginTop:       2,
   },
-  tsText: {
-    ...typography.labelMd,
-    color: colors.secondary,
-  },
-  actions: {
-    alignItems: 'center',
-    gap:        spacing.sm,
+  deleteActionText: {
+    ...typography.labelSm,
+    color: '#fff',
   },
   playBtn: {
     borderRadius: radius.full,
@@ -291,14 +375,12 @@ const cardStyles = StyleSheet.create({
     ...shadows.card,
   },
   playGradient: {
-    width:          44,
-    height:         44,
-    borderRadius:   22,
-    alignItems:     'center',
-    justifyContent: 'center',
-  },
-  deleteBtn: {
-    padding: spacing.xs,
+    width:           44,
+    height:          44,
+    borderRadius:    22,
+    alignItems:      'center',
+    justifyContent:  'center',
+    backgroundColor: colors.pillBg,
   },
 });
 
@@ -307,31 +389,8 @@ const styles = StyleSheet.create({
     flex:            1,
     backgroundColor: colors.background,
   },
-  loadingContainer: {
-    flex:            1,
-    backgroundColor: colors.background,
-    alignItems:      'center',
-    justifyContent:  'center',
-  },
   list: {
     gap: 0,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom:     spacing.xl,
-    gap:               spacing.sm,
-  },
-  headerSub: {
-    ...typography.labelSm,
-    color: colors.secondary,
-  },
-  headerTitle: {
-    ...typography.headlineLg,
-    color: colors.primary,
-  },
-  headerBody: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
   },
   countLabel: {
     ...typography.labelMd,

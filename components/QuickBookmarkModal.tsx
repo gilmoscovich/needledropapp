@@ -4,34 +4,31 @@
 // For currently-playing: timestamp is auto-captured and editable.
 // For recently-played: timestamp is empty, user can optionally add one.
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
   Modal,
   Pressable,
   StyleSheet,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { CurrentTrackInfo } from '@/hooks/useCurrentlyPlaying';
 import { useBookmarks } from '@/hooks/useBookmarks';
-import { isValidTimestamp } from '@/services/spotify';
+import { useToastContext } from '@/contexts/ToastContext';
 import { Bookmark } from '@/types';
 import {
   colors,
   typography,
   spacing,
   radius,
-  vinylGradient,
 } from '@/constants/theme';
 
 interface QuickBookmarkModalProps {
@@ -46,31 +43,20 @@ export function QuickBookmarkModal({
   onClose,
 }: QuickBookmarkModalProps) {
   const insets = useSafeAreaInsets();
-  const { saveBookmark } = useBookmarks();
+  const { saveBookmark, deleteBookmarksForAlbum, getBookmarksForAlbum } = useBookmarks();
+  const { showToast } = useToastContext();
 
-  const [timestamp, setTimestamp] = useState('');
-  const [tsError,   setTsError]   = useState('');
-  const [saving,    setSaving]    = useState(false);
+  const albumHasBookmarks = getBookmarksForAlbum(trackInfo.albumId).length > 0;
+  const [saving, setSaving] = useState(false);
 
-  // Pre-fill timestamp from API on open (empty for recently-played)
-  useEffect(() => {
-    if (visible) {
-      setTimestamp(trackInfo.timestamp);
-      setTsError('');
-    }
-  }, [visible, trackInfo.timestamp]);
-
-  const handleTimestampChange = (text: string) => {
-    setTimestamp(text);
-    setTsError(text && !isValidTimestamp(text) ? 'Format: mm:ss or h:mm:ss' : '');
+  const handleAlbumFinished = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await deleteBookmarksForAlbum(trackInfo.albumId);
+    showToast('Album removed from your list', 'default');
+    onClose();
   };
 
   const handleSave = async () => {
-    if (timestamp && !isValidTimestamp(timestamp)) {
-      setTsError('Format: mm:ss or h:mm:ss');
-      return;
-    }
-
     const bookmark: Bookmark = {
       albumId:    trackInfo.albumId,
       albumName:  trackInfo.albumName,
@@ -81,7 +67,7 @@ export function QuickBookmarkModal({
       trackName:  trackInfo.trackName,
       trackIndex: trackInfo.trackIndex,
       trackNum:   trackInfo.trackNum,
-      timestamp:  timestamp.trim() || null,
+      timestamp:  trackInfo.timestamp || null,
       savedAt:    Date.now(),
     };
 
@@ -155,43 +141,27 @@ export function QuickBookmarkModal({
             </View>
           </View>
 
-          {/* Timestamp — pre-filled if currently playing, empty if recently played */}
+          {/* Timestamp — read-only badge */}
           <View style={styles.tsSection}>
-            <Text style={styles.sectionLabel}>
-              {trackInfo.isPlaying
-                ? 'TIMESTAMP (CAPTURED AUTOMATICALLY)'
-                : 'TIMESTAMP (OPTIONAL)'}
-            </Text>
-            <View style={[
-              styles.tsInputWrapper,
-              trackInfo.isPlaying && styles.tsInputWrapperActive,
-            ]}>
-              <MaterialIcons
-                name="schedule"
-                size={16}
-                color={trackInfo.isPlaying ? colors.secondary : colors.outline}
-              />
-              <TextInput
-                style={styles.tsInput}
-                value={timestamp}
-                onChangeText={handleTimestampChange}
-                placeholder="e.g. 2:34"
-                placeholderTextColor={colors.outline}
-                keyboardType="numbers-and-punctuation"
-                returnKeyType="done"
-              />
-              {timestamp.length > 0 && (
-                <Pressable onPress={() => { setTimestamp(''); setTsError(''); }}>
-                  <MaterialIcons name="close" size={14} color={colors.outline} />
-                </Pressable>
-              )}
+            <Text style={styles.sectionLabel}>TIMESTAMP</Text>
+            <View style={styles.tsBadge}>
+              <MaterialIcons name="schedule" size={14} color={colors.secondary} />
+              <Text style={styles.tsBadgeText}>
+                {trackInfo.timestamp || 'No timestamp'}
+              </Text>
             </View>
-            {tsError ? (
-              <Text style={styles.tsError}>{tsError}</Text>
-            ) : timestamp && trackInfo.isPlaying ? (
-              <Text style={styles.tsHint}>You can adjust or clear this timestamp</Text>
-            ) : null}
           </View>
+
+          {/* Album Finished — only when album already has bookmarks */}
+          {albumHasBookmarks && (
+            <Pressable
+              onPress={handleAlbumFinished}
+              style={({ pressed }) => [styles.albumFinishedBtn, pressed && { opacity: 0.8 }]}
+            >
+              <MaterialIcons name="check-circle-outline" size={18} color={colors.error} />
+              <Text style={styles.albumFinishedBtnText}>Album Finished</Text>
+            </Pressable>
+          )}
 
           {/* Save button */}
           <Pressable
@@ -203,21 +173,16 @@ export function QuickBookmarkModal({
               pressed && { opacity: 0.85 },
             ]}
           >
-            <LinearGradient
-              colors={vinylGradient.colors}
-              start={vinylGradient.start}
-              end={vinylGradient.end}
-              style={styles.saveGradient}
-            >
+            <View style={styles.saveGradient}>
               {saving ? (
-                <ActivityIndicator color={colors.onPrimary} size="small" />
+                <ActivityIndicator color={colors.onPill} size="small" />
               ) : (
-                <MaterialCommunityIcons name="bookmark-music" size={18} color={colors.onPrimary} />
+                <MaterialCommunityIcons name="bookmark-music" size={18} color={colors.onPill} />
               )}
               <Text style={styles.saveBtnText}>
-                {saving ? 'Saving…' : 'Drop the Needle'}
+                {saving ? 'Saving…' : 'Save'}
               </Text>
-            </LinearGradient>
+            </View>
           </Pressable>
 
         </View>
@@ -309,33 +274,40 @@ const styles = StyleSheet.create({
     ...typography.labelSm,
     color: colors.outline,
   },
-  tsInputWrapper: {
+  tsBadge: {
     flexDirection:     'row',
     alignItems:        'center',
     gap:               spacing.sm,
-    backgroundColor:   colors.surfaceContainerHigh,
-    borderRadius:      radius.md,
+    alignSelf:         'flex-start',
+    backgroundColor:   'rgba(230, 190, 173, 0.12)',
+    borderRadius:      999,
     paddingHorizontal: spacing.md,
     paddingVertical:   spacing.sm,
     borderWidth:       1,
-    borderColor:       colors.outlineVariant,
+    borderColor:       'rgba(230, 190, 173, 0.25)',
   },
-  tsInputWrapperActive: {
-    borderColor: 'rgba(230, 190, 173, 0.3)',
-  },
-  tsInput: {
-    flex:    1,
+  tsBadgeText: {
     ...typography.bodyMd,
-    color:   colors.onSurface,
-    padding: 0,
+    color: colors.secondary,
   },
-  tsError: {
-    ...typography.labelMd,
+
+  // Album Finished button
+  albumFinishedBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               spacing.sm,
+    marginHorizontal:  spacing.lg,
+    borderRadius:      radius.full,
+    paddingVertical:   spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor:   colors.surfaceContainerHigh,
+    borderWidth:       1,
+    borderColor:       colors.errorContainer,
+  },
+  albumFinishedBtnText: {
+    ...typography.titleMd,
     color: colors.error,
-  },
-  tsHint: {
-    ...typography.labelMd,
-    color: colors.outline,
   },
 
   // Save button
@@ -354,9 +326,11 @@ const styles = StyleSheet.create({
     gap:               spacing.sm,
     paddingVertical:   spacing.lg,
     paddingHorizontal: spacing.xl,
+    backgroundColor:   colors.pillBg,
+    borderRadius:      999,
   },
   saveBtnText: {
     ...typography.titleMd,
-    color: colors.onPrimary,
+    color: colors.onPill,
   },
 });
