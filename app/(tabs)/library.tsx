@@ -150,7 +150,6 @@ export default function LibraryScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="My Library"
-        subtitle={bookmarks.length > 0 ? `${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}` : undefined}
         avatarUrl={user?.images?.[0]?.url}
         onAvatarPress={handleLogout}
       />

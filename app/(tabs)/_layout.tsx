@@ -19,7 +19,12 @@ export default function TabLayout() {
   const router = useRouter();
   const [handoffTrack, setHandoffTrack] = useState<CurrentTrackInfo | null>(null);
 
-  useSpotifyHandoff({ onHandoff: (info) => setHandoffTrack(info) });
+  useSpotifyHandoff({
+    onHandoff: (info) => {
+      // Only pop the modal when actively playing — not for paused/recently-played
+      if (info.isPlaying) setHandoffTrack(info);
+    },
+  });
 
   useEffect(() => {
     if (ready && !isAuthenticated) {
@@ -33,9 +38,9 @@ export default function TabLayout() {
         tabBar={props => <BottomNav {...props} />}
         screenOptions={{ headerShown: false, animation: 'fade' }}
       >
-        <Tabs.Screen name="library"   options={{ title: 'Library'   }} />
         <Tabs.Screen name="bookmarks" options={{ title: 'Bookmarks' }} />
         <Tabs.Screen name="search"    options={{ title: 'Search'    }} />
+        <Tabs.Screen name="library"   options={{ title: 'Library'   }} />
       </Tabs>
 
       {/* FAB floats above all tab screens */}

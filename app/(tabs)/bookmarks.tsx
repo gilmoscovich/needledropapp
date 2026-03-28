@@ -14,12 +14,12 @@ import {
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePlayback } from '@/hooks/usePlayback';
 import { useToastContext } from '@/contexts/ToastContext';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { SkeletonBookmarkCard } from '@/components/SkeletonBookmarkCard';
 import { Bookmark } from '@/types';
 import {
@@ -33,7 +33,6 @@ interface AlbumGroup extends Bookmark {
 }
 
 export default function BookmarksScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { bookmarks, loading, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
   const { showToast } = useToastContext();
@@ -121,7 +120,7 @@ export default function BookmarksScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={{ paddingTop: insets.top + spacing.lg }} />
+        <ScreenHeader title="Bookmarks" />
         {[0, 1, 2, 3].map(i => <SkeletonBookmarkCard key={i} />)}
       </View>
     );
@@ -134,15 +133,18 @@ export default function BookmarksScreen() {
         keyExtractor={item => item.albumId}
         contentContainerStyle={[
           styles.list,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: TAB_BAR_HEIGHT + spacing.xl },
+          { paddingBottom: TAB_BAR_HEIGHT + spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          albumGroups.length > 0 ? (
-            <Text style={[styles.countLabel, { paddingHorizontal: spacing.lg, marginBottom: spacing.sm }]}>
-              {albumGroups.length} ALBUM{albumGroups.length !== 1 ? 'S' : ''}
-            </Text>
-          ) : null
+          <View>
+            <ScreenHeader title="Bookmarks" />
+            {albumGroups.length > 0 && (
+              <Text style={[styles.countLabel, { paddingHorizontal: spacing.lg, marginBottom: spacing.sm }]}>
+                {albumGroups.length} ALBUM{albumGroups.length !== 1 ? 'S' : ''}
+              </Text>
+            )}
+          </View>
         }
         ListEmptyComponent={<BookmarksEmpty onSearch={() => router.push('/(tabs)/search')} />}
         renderItem={({ item }) => (

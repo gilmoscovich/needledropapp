@@ -1,63 +1,90 @@
 // components/NowPlayingFAB.tsx
-// Floating action button that sits above the bottom nav on all tab screens.
-// Tapping it fetches currently playing and opens the QuickBookmarkModal.
+// Floating action button — only visible when Spotify is actively playing.
+// Auto-checks on foreground; tapping opens the QuickBookmarkModal.
 
-import { useState } from 'react';
-import { View, Pressable, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Pressable, StyleSheet, Text, AppState, AppStateStatus } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { QuickBookmarkModal } from './QuickBookmarkModal';
 import { useCurrentlyPlaying, CurrentTrackInfo } from '@/hooks/useCurrentlyPlaying';
-import { useToastContext } from '@/contexts/ToastContext';
 import { colors, shadows, TAB_BAR_HEIGHT, spacing, typography } from '@/constants/theme';
 
+const MIN_BACKGROUND_MS = 2000;
+
 export function NowPlayingFAB() {
-  const { fetchNowPlaying, loading } = useCurrentlyPlaying();
-  const { showToast } = useToastContext();
-  const [trackInfo,    setTrackInfo]    = useState<CurrentTrackInfo | null>(null);
+  const { fetchNowPlaying } = useCurrentlyPlaying();
+  const [nowPlaying,   setNowPlaying]   = useState<CurrentTrackInfo | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handlePress = async () => {
-    if (loading) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const info = await fetchNowPlaying();
-    if (info) {
-      setTrackInfo(info);
-      setModalVisible(true);
-    } else {
-      showToast('Nothing playing right now', 'default');
+  const previousState  = useRef<AppStateStatus>(AppState.currentState);
+  const backgroundedAt = useRef<number | null>(null);
+  const isChecking     = useRef(false);
+
+  // Silently refresh playing state — only keep result if actively playing
+  const refresh = useCallback(async () => {
+    if (isChecking.current) return;
+    isChecking.current = true;
+    try {
+      const info = await fetchNowPlaying();
+      setNowPlaying(info?.isPlaying ? info : null);
+    } finally {
+      isChecking.current = false;
     }
+  }, [fetchNowPlaying]);
+
+  // Check on mount
+  useEffect(() => { refresh(); }, []);
+
+  // Check on foreground return
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      const prev = previousState.current;
+
+      if (nextState === 'background' || nextState === 'inactive') {
+        backgroundedAt.current = Date.now();
+      }
+
+      if (nextState === 'active' && (prev === 'background' || prev === 'inactive')) {
+        const elapsed = backgroundedAt.current !== null
+          ? Date.now() - backgroundedAt.current
+          : 0;
+        if (elapsed >= MIN_BACKGROUND_MS) refresh();
+      }
+
+      previousState.current = nextState;
+    });
+    return () => sub.remove();
+  }, [refresh]);
+
+  const handlePress = () => {
+    if (!nowPlaying) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setModalVisible(true);
   };
+
+  if (!nowPlaying) return null;
 
   return (
     <>
       <Pressable
         onPress={handlePress}
-        disabled={loading}
         style={({ pressed }) => [
           styles.fab,
           pressed && { transform: [{ scale: 0.92 }], opacity: 0.9 },
         ]}
       >
         <View style={styles.gradient}>
-          {loading ? (
-            <ActivityIndicator color={colors.onPill} size="small" />
-          ) : (
-            <MaterialCommunityIcons name="bookmark-music" size={22} color={colors.onPill} />
-          )}
-          <Text style={styles.label}>
-            {loading ? 'Checking…' : 'Bookmark Now'}
-          </Text>
+          <MaterialCommunityIcons name="bookmark-music" size={22} color={colors.onPill} />
+          <Text style={styles.label}>Bookmark Now</Text>
         </View>
       </Pressable>
 
-      {trackInfo && (
-        <QuickBookmarkModal
-          visible={modalVisible}
-          trackInfo={trackInfo}
-          onClose={() => setModalVisible(false)}
-        />
-      )}
+      <QuickBookmarkModal
+        visible={modalVisible}
+        trackInfo={nowPlaying}
+        onClose={() => setModalVisible(false)}
+      />
     </>
   );
 }
