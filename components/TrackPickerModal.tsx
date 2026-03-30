@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { SpotifyAlbum, SpotifyTrack, Bookmark } from '@/types';
-import { isValidTimestamp } from '@/services/spotify';
+import { isValidTimestamp, timestampToMs, msToTimestamp } from '@/services/spotify';
 import {
   colors, typography, spacing, radius,
   timestampBadgeStyle,
@@ -62,6 +62,16 @@ export function TrackPickerModal({
     }
   }, [visible]);
 
+  // Revalidate timestamp when the selected track changes (user may pick a shorter track)
+  useEffect(() => {
+    if (!timestamp || !selectedTrack || !isValidTimestamp(timestamp)) return;
+    if (timestampToMs(timestamp) > selectedTrack.duration_ms) {
+      setTsError(`Exceeds track length (${msToTimestamp(selectedTrack.duration_ms)})`);
+    } else {
+      setTsError('');
+    }
+  }, [selectedTrack]);
+
   // When a track is selected, prefill its existing timestamp if one exists
   const handleSelectTrack = (track: SpotifyTrack) => {
     Haptics.selectionAsync();
@@ -75,6 +85,8 @@ export function TrackPickerModal({
     setTimestamp(text);
     if (text && !isValidTimestamp(text)) {
       setTsError('Format: mm:ss or h:mm:ss');
+    } else if (text && selectedTrack && timestampToMs(text) > selectedTrack.duration_ms) {
+      setTsError(`Exceeds track length (${msToTimestamp(selectedTrack.duration_ms)})`);
     } else {
       setTsError('');
     }
