@@ -25,6 +25,7 @@ import {
   colors, typography, spacing, radius, shadows,
   timestampBadgeStyle,
 } from '@/constants/theme';
+import { msToTimestamp } from '@/services/spotify';
 
 const { width } = Dimensions.get('window');
 
@@ -35,10 +36,11 @@ export default function AlbumDetailScreen() {
   const { getAlbum, ready } = useSpotify();
   const { getBookmarksForAlbum, saveBookmark, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
 
-  const [album,      setAlbum]      = useState<SpotifyAlbum | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [loadError,  setLoadError]  = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
+  const [album,        setAlbum]        = useState<SpotifyAlbum | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [loadError,    setLoadError]    = useState(false);
+  const [showPicker,   setShowPicker]   = useState(false);
+  const [pendingTrack, setPendingTrack] = useState<SpotifyTrack | null>(null);
 
   const existingBookmarks = album ? getBookmarksForAlbum(album.id) : [];
   const bookmarked        = existingBookmarks.length > 0;
@@ -209,6 +211,10 @@ export default function AlbumDetailScreen() {
                 index={index}
                 isBookmarked={!!bm}
                 bookmarkedTimestamp={bm?.timestamp ?? null}
+                onPress={() => {
+                  setPendingTrack(track);
+                  setShowPicker(true);
+                }}
               />
             );
           })}
@@ -220,10 +226,15 @@ export default function AlbumDetailScreen() {
         visible={showPicker}
         album={album}
         existingBookmarks={existingBookmarks}
-        onClose={() => setShowPicker(false)}
+        initialTrack={pendingTrack}
+        onClose={() => {
+          setShowPicker(false);
+          setPendingTrack(null);
+        }}
         onSave={async (bookmark) => {
           await saveBookmark(bookmark);
           setShowPicker(false);
+          setPendingTrack(null);
         }}
       />
     </View>
@@ -235,14 +246,23 @@ function TrackRow({
   index,
   isBookmarked,
   bookmarkedTimestamp,
+  onPress,
 }: {
   track:               SpotifyTrack;
   index:               number;
   isBookmarked:        boolean;
   bookmarkedTimestamp: string | null | undefined;
+  onPress:             () => void;
 }) {
   return (
-    <View style={[trackStyles.row, isBookmarked && trackStyles.rowActive]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        trackStyles.row,
+        isBookmarked && trackStyles.rowActive,
+        pressed && { opacity: 0.7 },
+      ]}
+    >
       {isBookmarked && <View style={trackStyles.activeBorder} />}
 
       <Text style={[trackStyles.num, isBookmarked && trackStyles.numActive]}>
@@ -262,7 +282,11 @@ function TrackRow({
           </View>
         )}
       </View>
-    </View>
+
+      <Text style={[trackStyles.duration, isBookmarked && trackStyles.durationActive]}>
+        {msToTimestamp(track.duration_ms)}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -320,6 +344,13 @@ const trackStyles = StyleSheet.create({
   },
   tsText: {
     ...typography.labelMd,
+    color: colors.secondary,
+  },
+  duration: {
+    ...typography.labelMd,
+    color: colors.outlineVariant,
+  },
+  durationActive: {
     color: colors.secondary,
   },
 });
