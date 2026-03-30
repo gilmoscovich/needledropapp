@@ -27,6 +27,7 @@ interface TrackPickerModalProps {
   visible:           boolean;
   album:             SpotifyAlbum;
   existingBookmarks?: Bookmark[];
+  initialTrack?:     SpotifyTrack | null;
   onClose:           () => void;
   onSave:            (bookmark: Bookmark) => Promise<void>;
 }
@@ -35,6 +36,7 @@ export function TrackPickerModal({
   visible,
   album,
   existingBookmarks = [],
+  initialTrack,
   onClose,
   onSave,
 }: TrackPickerModalProps) {
@@ -45,12 +47,19 @@ export function TrackPickerModal({
   const [saving,        setSaving]        = useState(false);
   const [tsError,       setTsError]       = useState('');
 
-  // On open: clear selection (let user pick fresh or re-pick a track)
+  // On open: pre-select initialTrack if provided, otherwise clear
   useEffect(() => {
     if (!visible) return;
-    setSelectedTrack(null);
-    setTimestamp('');
-    setTsError('');
+    if (initialTrack) {
+      setSelectedTrack(initialTrack);
+      const existing = existingBookmarks.find(b => b.trackUri === initialTrack.uri);
+      setTimestamp(existing?.timestamp ?? '');
+      setTsError('');
+    } else {
+      setSelectedTrack(null);
+      setTimestamp('');
+      setTsError('');
+    }
   }, [visible]);
 
   // When a track is selected, prefill its existing timestamp if one exists
