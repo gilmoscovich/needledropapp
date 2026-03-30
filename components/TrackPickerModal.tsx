@@ -164,7 +164,7 @@ export function TrackPickerModal({
                 style={styles.tsInput}
                 value={timestamp}
                 onChangeText={handleTimestampChange}
-                placeholder="2:34 or 1:04:22"
+                placeholder={selectedTrack ? `0:00 – ${msToTimestamp(selectedTrack.duration_ms)}` : '2:34 or 1:04:22'}
                 placeholderTextColor={colors.outline}
                 keyboardType="numbers-and-punctuation"
                 returnKeyType="done"
