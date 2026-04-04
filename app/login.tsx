@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)/library');
+      router.replace('/(tabs)/bookmarks');
       return;
     }
 

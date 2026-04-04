@@ -40,7 +40,6 @@ export default function TabLayout() {
       >
         <Tabs.Screen name="bookmarks" options={{ title: 'Bookmarks' }} />
         <Tabs.Screen name="search"    options={{ title: 'Search'    }} />
-        <Tabs.Screen name="library"   options={{ title: 'Library'   }} />
       </Tabs>
 
       {/* FAB floats above all tab screens */}

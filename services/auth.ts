@@ -9,7 +9,6 @@ import * as SecureStore from 'expo-secure-store';
 const CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID!;
 const SCOPES = [
   'user-read-private',
-  'user-library-read',
   'streaming',
   'user-read-playback-state',
   'user-modify-playback-state',

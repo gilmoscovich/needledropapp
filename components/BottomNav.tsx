@@ -9,18 +9,6 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius, TAB_BAR_HEIGHT, glassNavStyle } from '@/constants/theme';
 
-interface Tab {
-  key:   string;
-  label: string;
-  route: string;
-}
-
-const TABS: Tab[] = [
-  { key: 'library',   label: 'Library',   route: 'library'   },
-  { key: 'bookmarks', label: 'Bookmarks', route: 'bookmarks' },
-  { key: 'search',    label: 'Search',    route: 'search'    },
-];
-
 interface BottomNavProps {
   state:       any;
   descriptors: any;
@@ -77,8 +65,6 @@ function TabIcon({ name, active }: { name: string; active: boolean }) {
   const size  = 22;
 
   switch (name) {
-    case 'library':
-      return <MaterialIcons name="library-music" size={size} color={color} />;
     case 'bookmarks':
       return <MaterialCommunityIcons name="book-heart" size={size} color={color} />;
     case 'search':

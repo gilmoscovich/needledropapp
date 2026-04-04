@@ -12,7 +12,7 @@ export default function Index() {
   useEffect(() => {
     if (!ready) return;
     if (isAuthenticated) {
-      router.replace('/(tabs)/library');
+      router.replace('/(tabs)/bookmarks');
     } else {
       router.replace('/login');
     }

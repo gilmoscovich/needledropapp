@@ -34,14 +34,6 @@ export function useSpotify() {
     }
   }, [token, handleError]);
 
-  const getMyAlbums = useCallback(async (): Promise<SpotifyAlbum[]> => {
-    try {
-      return await spotifyService.getMyAlbums(token!);
-    } catch (err) {
-      return handleError(err) as never;
-    }
-  }, [token, handleError]);
-
   const getAlbum = useCallback(async (albumId: string): Promise<SpotifyAlbum> => {
     try {
       return await spotifyService.getAlbum(albumId, token!);
@@ -50,5 +42,5 @@ export function useSpotify() {
     }
   }, [token, handleError]);
 
-  return { getUserProfile, searchAlbums, getMyAlbums, getAlbum, ready, logout };
+  return { getUserProfile, searchAlbums, getAlbum, ready, logout };
 }
