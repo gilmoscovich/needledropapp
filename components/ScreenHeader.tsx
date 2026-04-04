@@ -1,45 +1,64 @@
 // components/ScreenHeader.tsx
-// Glassmorphic top header with wordmark + user avatar.
-// Passed a title prop for the page heading below the bar.
+// Glassmorphic top header with user avatar (tapping opens logout).
+// Fetches user profile internally — no props needed for auth.
 
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useSpotify } from '@/hooks/useSpotify';
 import { colors, typography, spacing, glassNavStyle } from '@/constants/theme';
 
 interface ScreenHeaderProps {
-  title:          string;
-  subtitle?:      string;
-  avatarUrl?:     string;
-  onAvatarPress?: () => void;
-  rightSlot?:     React.ReactNode;
+  title:      string;
+  subtitle?:  string;
+  rightSlot?: React.ReactNode;
 }
 
-export function ScreenHeader({
-  title,
-  subtitle,
-  avatarUrl,
-  onAvatarPress,
-  rightSlot,
-}: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, rightSlot }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { getUserProfile, logout, ready } = useSpotify();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    getUserProfile()
+      .then(user => setAvatarUrl(user?.images?.[0]?.url ?? null))
+      .catch(() => {});
+  }, [ready]);
+
+  const handleLogout = useCallback(() => {
+    Alert.alert(
+      'Log Out',
+      "You'll need to log back in to use NeedleDrop.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/login');
+          },
+        },
+      ]
+    );
+  }, [logout, router]);
 
   const Inner = (
     <View style={[styles.bar, { paddingTop: insets.top + spacing.sm }]}>
-      {/* Left: avatar + wordmark */}
-      <View style={styles.left}>
-        {(avatarUrl || onAvatarPress) && (
-          <Pressable onPress={onAvatarPress} style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}>
-            {avatarUrl && (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
-            )}
-          </Pressable>
+      <Pressable
+        onPress={handleLogout}
+        style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}
+      >
+        {avatarUrl && (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
         )}
-        <Text style={styles.wordmark}>NEEDLE DROP</Text>
-      </View>
+      </Pressable>
 
-      {/* Right slot (search icon, etc.) */}
       {rightSlot && <View style={styles.right}>{rightSlot}</View>}
     </View>
   );
@@ -56,7 +75,6 @@ export function ScreenHeader({
         </View>
       )}
 
-      {/* Page title — below the bar, part of scroll header */}
       <View style={styles.titleBlock}>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         <Text style={styles.title}>{title}</Text>
@@ -76,28 +94,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom:     spacing.md,
   },
-  left: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing.sm,
-  },
   avatar: {
-    width:        32,
-    height:       32,
-    borderRadius: 16,
+    width:        36,
+    height:       36,
+    borderRadius: 18,
     overflow:     'hidden',
-  },
-  avatarImg: {
-    width:  '100%',
-    height: '100%',
   },
   avatarPlaceholder: {
     backgroundColor: colors.surfaceContainerHigh,
   },
-  wordmark: {
-    ...typography.labelLg,
-    color:         colors.primary,
-    letterSpacing: 3,
+  avatarImg: {
+    width:  '100%',
+    height: '100%',
   },
   right: {
     flexDirection: 'row',
