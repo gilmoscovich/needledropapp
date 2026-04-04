@@ -36,7 +36,7 @@ export default function TabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         tabBar={props => <BottomNav {...props} />}
-        screenOptions={{ headerShown: false, animation: 'fade' }}
+        screenOptions={{ headerShown: false, animation: 'none' }}
       >
         <Tabs.Screen name="bookmarks" options={{ title: 'Bookmarks' }} />
         <Tabs.Screen name="search"    options={{ title: 'Search'    }} />
