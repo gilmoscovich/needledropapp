@@ -1,23 +1,20 @@
 // components/ScreenHeader.tsx
-// Glassmorphic top header with user avatar (tapping opens logout).
-// Fetches user profile internally — no props needed for auth.
+// Single-row header: avatar (taps to log out) → title → optional right slot.
 
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Alert } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useSpotify } from '@/hooks/useSpotify';
-import { colors, typography, spacing, glassNavStyle } from '@/constants/theme';
+import { colors, typography, spacing } from '@/constants/theme';
 
 interface ScreenHeaderProps {
   title:      string;
-  subtitle?:  string;
   rightSlot?: React.ReactNode;
 }
 
-export function ScreenHeader({ title, subtitle, rightSlot }: ScreenHeaderProps) {
+export function ScreenHeader({ title, rightSlot }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { getUserProfile, logout, ready } = useSpotify();
@@ -48,8 +45,8 @@ export function ScreenHeader({ title, subtitle, rightSlot }: ScreenHeaderProps) 
     );
   }, [logout, router]);
 
-  const Inner = (
-    <View style={[styles.bar, { paddingTop: insets.top + spacing.sm }]}>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <Pressable
         onPress={handleLogout}
         style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}
@@ -59,46 +56,28 @@ export function ScreenHeader({ title, subtitle, rightSlot }: ScreenHeaderProps) 
         )}
       </Pressable>
 
-      {rightSlot && <View style={styles.right}>{rightSlot}</View>}
-    </View>
-  );
+      <Text style={styles.title} numberOfLines={1}>{title}</Text>
 
-  return (
-    <View>
-      {Platform.OS === 'ios' ? (
-        <BlurView intensity={70} tint="dark" style={styles.blurWrapper}>
-          {Inner}
-        </BlurView>
-      ) : (
-        <View style={[styles.blurWrapper, { backgroundColor: glassNavStyle.backgroundColor }]}>
-          {Inner}
-        </View>
-      )}
-
-      <View style={styles.titleBlock}>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-        <Text style={styles.title}>{title}</Text>
-      </View>
+      {rightSlot && <View>{rightSlot}</View>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  blurWrapper: {
-    overflow: 'hidden',
-  },
-  bar: {
+  container: {
     flexDirection:     'row',
     alignItems:        'center',
-    justifyContent:    'space-between',
+    gap:               spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingBottom:     spacing.md,
+    paddingBottom:     spacing.lg,
+    backgroundColor:   colors.background,
   },
   avatar: {
-    width:        36,
-    height:       36,
-    borderRadius: 18,
+    width:        40,
+    height:       40,
+    borderRadius: 20,
     overflow:     'hidden',
+    flexShrink:   0,
   },
   avatarPlaceholder: {
     backgroundColor: colors.surfaceContainerHigh,
@@ -107,24 +86,9 @@ const styles = StyleSheet.create({
     width:  '100%',
     height: '100%',
   },
-  right: {
-    flexDirection: 'row',
-    gap:           spacing.lg,
-  },
-  titleBlock: {
-    paddingHorizontal: spacing.lg,
-    paddingTop:        spacing.xl,
-    paddingBottom:     spacing.md,
-    backgroundColor:   colors.background,
-  },
-  subtitle: {
-    ...typography.labelSm,
-    color:         colors.secondary,
-    marginBottom:  4,
-    letterSpacing: 3,
-  },
   title: {
     ...typography.headlineLg,
     color: colors.primary,
+    flex:  1,
   },
 });
