@@ -4,13 +4,14 @@
 // For currently-playing: timestamp is auto-captured and editable.
 // For recently-played: timestamp is empty, user can optionally add one.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
   Modal,
   Pressable,
   StyleSheet,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -48,6 +49,9 @@ export function QuickBookmarkModal({
 
   const albumHasBookmarks = getBookmarksForAlbum(trackInfo.albumId).length > 0;
   const [saving, setSaving] = useState(false);
+  const [note,   setNote]   = useState('');
+
+  useEffect(() => { if (!visible) setNote(''); }, [visible]);
 
   const handleAlbumFinished = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -68,6 +72,7 @@ export function QuickBookmarkModal({
       trackIndex: trackInfo.trackIndex,
       trackNum:   trackInfo.trackNum,
       timestamp:  trackInfo.timestamp || null,
+      note:       note.trim() || undefined,
       savedAt:    Date.now(),
     };
 
@@ -149,6 +154,27 @@ export function QuickBookmarkModal({
               <Text style={styles.tsBadgeText}>
                 {trackInfo.timestamp || 'No timestamp'}
               </Text>
+            </View>
+          </View>
+
+          {/* Note input */}
+          <View style={styles.noteSection}>
+            <Text style={styles.sectionLabel}>NOTE (OPTIONAL)</Text>
+            <View style={styles.noteInputWrapper}>
+              <MaterialIcons name="edit-note" size={16} color={colors.outline} />
+              <TextInput
+                style={[styles.noteInput, { minHeight: 36 }]}
+                value={note}
+                onChangeText={setNote}
+                placeholder=""
+                placeholderTextColor={colors.outline}
+                multiline
+              />
+              {note.length > 0 && (
+                <Pressable onPress={() => setNote('')}>
+                  <MaterialIcons name="close" size={14} color={colors.outline} />
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -263,6 +289,27 @@ const styles = StyleSheet.create({
     ...typography.labelLg,
     color:         colors.outline,
     letterSpacing: 0.5,
+  },
+
+  // Note input
+  noteSection: {
+    paddingHorizontal: spacing.lg,
+    gap:               spacing.sm,
+  },
+  noteInputWrapper: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               spacing.sm,
+    backgroundColor:   colors.surfaceContainerHigh,
+    borderRadius:      radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.sm,
+  },
+  noteInput: {
+    flex:     1,
+    ...typography.bodyMd,
+    color:    colors.onSurface,
+    padding:  0,
   },
 
   // Timestamp

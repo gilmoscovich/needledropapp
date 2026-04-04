@@ -44,6 +44,7 @@ export function TrackPickerModal({
 
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [timestamp,     setTimestamp]     = useState('');
+  const [note,          setNote]          = useState('');
   const [saving,        setSaving]        = useState(false);
   const [tsError,       setTsError]       = useState('');
 
@@ -54,10 +55,12 @@ export function TrackPickerModal({
       setSelectedTrack(initialTrack);
       const existing = existingBookmarks.find(b => b.trackUri === initialTrack.uri);
       setTimestamp(existing?.timestamp ?? '');
+      setNote(existing?.note ?? '');
       setTsError('');
     } else {
       setSelectedTrack(null);
       setTimestamp('');
+      setNote('');
       setTsError('');
     }
   }, [visible]);
@@ -78,6 +81,7 @@ export function TrackPickerModal({
     setSelectedTrack(track);
     const existing = existingBookmarks.find(b => b.trackUri === track.uri);
     setTimestamp(existing?.timestamp ?? '');
+    setNote(existing?.note ?? '');
     setTsError('');
   };
 
@@ -115,6 +119,7 @@ export function TrackPickerModal({
       trackIndex: trackIndex,
       trackNum:   selectedTrack.track_number,
       timestamp:  timestamp.trim() || null,
+      note:       note.trim() || undefined,
       savedAt:    Date.now(),
     };
 
@@ -177,6 +182,27 @@ export function TrackPickerModal({
               )}
             </View>
             {tsError ? <Text style={styles.tsError}>{tsError}</Text> : null}
+          </View>
+
+          {/* Note input */}
+          <View style={styles.tsSection}>
+            <Text style={styles.sectionLabel}>NOTE (OPTIONAL)</Text>
+            <View style={styles.tsInputWrapper}>
+              <MaterialIcons name="edit-note" size={16} color={colors.outline} />
+              <TextInput
+                style={[styles.tsInput, { minHeight: 36 }]}
+                value={note}
+                onChangeText={setNote}
+                placeholder=""
+                placeholderTextColor={colors.outline}
+                multiline
+              />
+              {note.length > 0 && (
+                <Pressable onPress={() => setNote('')}>
+                  <MaterialIcons name="close" size={14} color={colors.outline} />
+                </Pressable>
+              )}
+            </View>
           </View>
 
           {/* Track list */}

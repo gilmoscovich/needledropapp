@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Share,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -17,8 +19,10 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TrackPickerModal } from '@/components/TrackPickerModal';
+import { NoteEditSheet } from '@/components/NoteEditSheet';
 import { useSpotify } from '@/hooks/useSpotify';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { usePlayback } from '@/hooks/usePlayback';
 import { useToastContext } from '@/contexts/ToastContext';
 import { SpotifyAlbum, SpotifyTrack, Bookmark } from '@/types';
 import {
@@ -35,12 +39,14 @@ export default function AlbumDetailScreen() {
   const insets     = useSafeAreaInsets();
   const { getAlbum, ready } = useSpotify();
   const { getBookmarksForAlbum, saveBookmark, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
+  const { resume } = usePlayback({});
 
   const [album,        setAlbum]        = useState<SpotifyAlbum | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [loadError,    setLoadError]    = useState(false);
   const [showPicker,   setShowPicker]   = useState(false);
   const [pendingTrack, setPendingTrack] = useState<SpotifyTrack | null>(null);
+  const [editingNote,  setEditingNote]  = useState<Bookmark | null>(null);
 
   const existingBookmarks = album ? getBookmarksForAlbum(album.id) : [];
   const bookmarked        = existingBookmarks.length > 0;
@@ -74,6 +80,19 @@ export default function AlbumDetailScreen() {
       ]
     );
   }, [album, existingBookmarks.length, deleteBookmarksForAlbum, showToast]);
+
+  const shareBookmark = (bm: Bookmark) => {
+    const trackId = bm.trackUri.split(':').pop();
+    const url = `https://open.spotify.com/track/${trackId}`;
+    const text = bm.timestamp
+      ? `${bm.trackName} · ${bm.artist} at ${bm.timestamp}`
+      : `${bm.trackName} · ${bm.artist}`;
+    Share.share(
+      Platform.OS === 'ios'
+        ? { message: text, url }
+        : { message: `${text}\n${url}` }
+    );
+  };
 
   const handleDeleteBookmark = (trackUri: string, trackName: string) => {
     Alert.alert(
@@ -155,22 +174,52 @@ export default function AlbumDetailScreen() {
 
           {/* Bookmark badges — one per bookmarked track */}
           {existingBookmarks.map(bm => (
-            <View key={bm.trackUri} style={styles.bookmarkBadge}>
-              <MaterialCommunityIcons name="book-heart" size={14} color={colors.secondary} />
-              <Text style={styles.bookmarkBadgeText}>{bm.trackName}</Text>
-              {bm.timestamp && (
-                <View style={[styles.tsBadge, timestampBadgeStyle]}>
-                  <Text style={styles.tsBadgeText}>{bm.timestamp}</Text>
-                </View>
+            <Pressable
+              key={bm.trackUri}
+              style={({ pressed }) => [
+                styles.bookmarkBadge,
+                bm.note && styles.bookmarkBadgeWithNote,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                resume(bm);
+              }}
+            >
+              {/* Top row: icon, name, timestamp, delete */}
+              <View style={styles.bookmarkBadgeRow}>
+                <MaterialCommunityIcons name="book-heart" size={14} color={colors.secondary} />
+                <Text style={styles.bookmarkBadgeText}>{bm.trackName}</Text>
+                {bm.timestamp && (
+                  <View style={[styles.tsBadge, timestampBadgeStyle]}>
+                    <Text style={styles.tsBadgeText}>{bm.timestamp}</Text>
+                  </View>
+                )}
+                <Pressable
+                  onPress={() => shareBookmark(bm)}
+                  hitSlop={8}
+                >
+                  <MaterialIcons name="share" size={12} color={colors.outline} />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDeleteBookmark(bm.trackUri, bm.trackName)}
+                  hitSlop={8}
+                  style={styles.bookmarkBadgeDelete}
+                >
+                  <MaterialIcons name="close" size={12} color={colors.outline} />
+                </Pressable>
+              </View>
+              {/* Note row */}
+              {bm.note && (
+                <Pressable
+                  onPress={() => setEditingNote(bm)}
+                  hitSlop={4}
+                  style={styles.bookmarkBadgeNoteRow}
+                >
+                  <Text style={styles.bookmarkBadgeNote} numberOfLines={2}>{bm.note}</Text>
+                </Pressable>
               )}
-              <Pressable
-                onPress={() => handleDeleteBookmark(bm.trackUri, bm.trackName)}
-                hitSlop={8}
-                style={styles.bookmarkBadgeDelete}
-              >
-                <MaterialIcons name="close" size={12} color={colors.outline} />
-              </Pressable>
-            </View>
+            </Pressable>
           ))}
 
           {/* Action buttons */}
@@ -211,6 +260,7 @@ export default function AlbumDetailScreen() {
                 index={index}
                 isBookmarked={!!bm}
                 bookmarkedTimestamp={bm?.timestamp ?? null}
+                bookmarkedNote={bm?.note ?? null}
                 onPress={() => {
                   setPendingTrack(track);
                   setShowPicker(true);
@@ -220,6 +270,17 @@ export default function AlbumDetailScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Note edit sheet */}
+      <NoteEditSheet
+        visible={!!editingNote}
+        bookmark={editingNote}
+        onClose={() => setEditingNote(null)}
+        onSave={async (updated) => {
+          await saveBookmark(updated);
+          setEditingNote(null);
+        }}
+      />
 
       {/* Track picker modal */}
       <TrackPickerModal
@@ -246,12 +307,14 @@ function TrackRow({
   index,
   isBookmarked,
   bookmarkedTimestamp,
+  bookmarkedNote,
   onPress,
 }: {
   track:               SpotifyTrack;
   index:               number;
   isBookmarked:        boolean;
   bookmarkedTimestamp: string | null | undefined;
+  bookmarkedNote:      string | null | undefined;
   onPress:             () => void;
 }) {
   return (
@@ -280,6 +343,9 @@ function TrackRow({
               Dropped at {bookmarkedTimestamp}
             </Text>
           </View>
+        )}
+        {isBookmarked && bookmarkedNote && (
+          <Text style={trackStyles.noteText} numberOfLines={1}>{bookmarkedNote}</Text>
         )}
       </View>
 
@@ -353,6 +419,13 @@ const trackStyles = StyleSheet.create({
   durationActive: {
     color: colors.secondary,
   },
+  noteText: {
+    ...typography.labelMd,
+    color:         colors.onSurfaceVariant,
+    letterSpacing: 0,
+    textTransform: 'none' as const,
+    fontWeight:    '400' as const,
+  },
 });
 
 const styles = StyleSheet.create({
@@ -424,15 +497,23 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
   },
   bookmarkBadge: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               spacing.sm,
+    flexDirection:     'column',
     alignSelf:         'flex-start',
     marginTop:         spacing.xs,
     backgroundColor:   'rgba(92,64,51,0.10)',
     borderRadius:      999,
     paddingVertical:   4,
     paddingHorizontal: spacing.sm,
+    gap:               2,
+  },
+  bookmarkBadgeWithNote: {
+    borderRadius: radius.xl,
+    paddingBottom: spacing.xs,
+  },
+  bookmarkBadgeRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing.sm,
   },
   bookmarkBadgeDelete: {
     marginLeft: 2,
@@ -440,6 +521,15 @@ const styles = StyleSheet.create({
   bookmarkBadgeText: {
     ...typography.labelLg,
     color: colors.secondary,
+  },
+  bookmarkBadgeNoteRow: {
+    paddingLeft: 22,
+    paddingRight: spacing.lg,
+  },
+  bookmarkBadgeNote: {
+    ...typography.bodyMd,
+    color:      colors.onSurfaceVariant,
+    fontWeight: '400' as const,
   },
   tsBadge: {
     paddingHorizontal: spacing.sm,

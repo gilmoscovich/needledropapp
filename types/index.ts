@@ -35,6 +35,7 @@ export interface Bookmark {
   trackIndex: number;   // 0-based position in album
   trackNum: number;     // 1-based display number
   timestamp: string | null;  // "mm:ss" or "h:mm:ss" format
+  note?: string;         // optional free-text annotation
   savedAt: number;      // Date.now()
 }
 

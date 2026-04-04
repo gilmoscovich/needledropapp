@@ -1,5 +1,5 @@
 // app/(tabs)/bookmarks.tsx
-import { useCallback, useRef, useMemo } from 'react';
+import { useCallback, useRef, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActionSheetIOS,
   Platform,
   Alert,
+  Share,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -21,10 +22,11 @@ import { usePlayback } from '@/hooks/usePlayback';
 import { useToastContext } from '@/contexts/ToastContext';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SkeletonBookmarkCard } from '@/components/SkeletonBookmarkCard';
+import { NoteEditSheet } from '@/components/NoteEditSheet';
 import { Bookmark } from '@/types';
 import {
   colors, typography, spacing, radius, shadows,
-  TAB_BAR_HEIGHT,
+  TAB_BAR_HEIGHT, timestampBadgeStyle,
 } from '@/constants/theme';
 
 interface AlbumGroup extends Bookmark {
@@ -34,8 +36,10 @@ interface AlbumGroup extends Bookmark {
 
 export default function BookmarksScreen() {
   const router = useRouter();
-  const { bookmarks, loading, deleteBookmark, deleteBookmarksForAlbum } = useBookmarks();
+  const { bookmarks, loading, deleteBookmark, deleteBookmarksForAlbum, saveBookmark } = useBookmarks();
   const { showToast } = useToastContext();
+  const [editingNote, setEditingNote] = useState<Bookmark | null>(null);
+  const [sortNewest,  setSortNewest]  = useState(true);
 
   // Group flat bookmarks list by albumId — one card per album
   const albumGroups = useMemo<AlbumGroup[]>(() => {
@@ -50,8 +54,8 @@ export default function BookmarksScreen() {
         bookmarks: group.sort((a, b) => b.savedAt - a.savedAt),
         count:     group.length,
       }))
-      .sort((a, b) => b.savedAt - a.savedAt);
-  }, [bookmarks]);
+      .sort((a, b) => sortNewest ? b.savedAt - a.savedAt : a.savedAt - b.savedAt);
+  }, [bookmarks, sortNewest]);
 
   const { resume, loadingAlbumId } = usePlayback({
     onSuccess:        () => showToast('Now playing!', 'success'),
@@ -64,6 +68,28 @@ export default function BookmarksScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     resume(group.bookmarks[0]); // most-recently-saved bookmark
   }, [resume]);
+
+  const handlePlayBookmark = useCallback((bm: Bookmark) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    resume(bm);
+  }, [resume]);
+
+  const handleEditNote = useCallback((bm: Bookmark) => {
+    setEditingNote(bm);
+  }, []);
+
+  const handleShareBookmark = useCallback((bm: Bookmark) => {
+    const trackId = bm.trackUri.split(':').pop();
+    const url = `https://open.spotify.com/track/${trackId}`;
+    const text = bm.timestamp
+      ? `${bm.trackName} · ${bm.artist} at ${bm.timestamp}`
+      : `${bm.trackName} · ${bm.artist}`;
+    Share.share(
+      Platform.OS === 'ios'
+        ? { message: text, url }
+        : { message: `${text}\n${url}` }
+    );
+  }, []);
 
   const handleDelete = useCallback((group: AlbumGroup) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -140,9 +166,22 @@ export default function BookmarksScreen() {
           <View>
             <ScreenHeader title="Bookmarks" />
             {albumGroups.length > 0 && (
-              <Text style={[styles.countLabel, { paddingHorizontal: spacing.lg, marginBottom: spacing.sm }]}>
-                {albumGroups.length} ALBUM{albumGroups.length !== 1 ? 'S' : ''}
-              </Text>
+              <View style={styles.sortRow}>
+                <Text style={styles.countLabel}>
+                  {albumGroups.length} ALBUM{albumGroups.length !== 1 ? 'S' : ''}
+                </Text>
+                <Pressable
+                  onPress={() => setSortNewest(v => !v)}
+                  style={({ pressed }) => [styles.sortBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <MaterialIcons
+                    name={sortNewest ? 'arrow-downward' : 'arrow-upward'}
+                    size={12}
+                    color={colors.outline}
+                  />
+                  <Text style={styles.sortBtnText}>{sortNewest ? 'Newest' : 'Oldest'}</Text>
+                </Pressable>
+              </View>
             )}
           </View>
         }
@@ -152,21 +191,37 @@ export default function BookmarksScreen() {
             group={item}
             isPlaying={loadingAlbumId === item.albumId}
             onPlay={() => handlePlay(item)}
+            onPlayBookmark={handlePlayBookmark}
+            onShareBookmark={handleShareBookmark}
             onPress={() => router.push(`/album/${item.albumId}`)}
             onDelete={() => handleDelete(item)}
+            onEditNote={handleEditNote}
           />
         )}
+      />
+
+      <NoteEditSheet
+        visible={!!editingNote}
+        bookmark={editingNote}
+        onClose={() => setEditingNote(null)}
+        onSave={async (updated) => {
+          await saveBookmark(updated);
+          setEditingNote(null);
+        }}
       />
     </View>
   );
 }
 
 function SwipeableAlbumCard(props: {
-  group:     AlbumGroup;
-  isPlaying: boolean;
-  onPlay:    () => void;
-  onPress:   () => void;
-  onDelete:  () => void;
+  group:            AlbumGroup;
+  isPlaying:        boolean;
+  onPlay:           () => void;
+  onPlayBookmark:   (bm: Bookmark) => void;
+  onShareBookmark:  (bm: Bookmark) => void;
+  onPress:          () => void;
+  onDelete:         () => void;
+  onEditNote:       (bm: Bookmark) => void;
 }) {
   const swipeRef = useRef<Swipeable>(null);
 
@@ -196,59 +251,129 @@ function AlbumCard({
   group,
   isPlaying,
   onPlay,
+  onPlayBookmark,
+  onShareBookmark,
   onPress,
+  onEditNote,
 }: {
-  group:     AlbumGroup;
-  isPlaying: boolean;
-  onPlay:    () => void;
-  onPress:   () => void;
-  onDelete:  () => void;
+  group:           AlbumGroup;
+  isPlaying:       boolean;
+  onPlay:          () => void;
+  onPlayBookmark:  (bm: Bookmark) => void;
+  onShareBookmark: (bm: Bookmark) => void;
+  onPress:         () => void;
+  onDelete:        () => void;
+  onEditNote:      (bm: Bookmark) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [
-      cardStyles.card,
-      pressed && { opacity: 0.9 },
-    ]}>
-      {/* Album art + count badge */}
-      <View style={cardStyles.artWrapper}>
-        {group.art ? (
-          <Image source={{ uri: group.art }} style={cardStyles.art} contentFit="cover" />
-        ) : (
-          <View style={[cardStyles.art, cardStyles.artPlaceholder]} />
-        )}
-        {group.count > 1 && (
-          <View style={cardStyles.countBadge}>
-            <Text style={cardStyles.countBadgeText}>{group.count}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Text content */}
-      <View style={cardStyles.content}>
-        <Text style={cardStyles.albumName} numberOfLines={1}>{group.albumName}</Text>
-        <Text style={cardStyles.artist} numberOfLines={1}>{group.artist}</Text>
-        {group.count > 1 && (
-          <Text style={cardStyles.trackHint} numberOfLines={1}>
-            {group.bookmarks[0].trackName}
-          </Text>
-        )}
-        {group.count === 1 && (
-          <Text style={cardStyles.trackHint} numberOfLines={1}>
-            {group.bookmarks[0].trackNum}. {group.bookmarks[0].trackName}
-          </Text>
-        )}
-      </View>
-
-      {/* Play button */}
-      <Pressable onPress={onPlay} disabled={isPlaying} style={cardStyles.playBtn}>
-        <View style={cardStyles.playGradient}>
-          {isPlaying
-            ? <ActivityIndicator color={colors.onPill} size="small" />
-            : <MaterialIcons name="play-arrow" size={20} color={colors.onPill} />
-          }
+    <View style={cardStyles.card}>
+      {/* Header row */}
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [cardStyles.cardHeader, pressed && { opacity: 0.9 }]}
+      >
+        {/* Album art + count badge */}
+        <View style={cardStyles.artWrapper}>
+          {group.art ? (
+            <Image source={{ uri: group.art }} style={cardStyles.art} contentFit="cover" />
+          ) : (
+            <View style={[cardStyles.art, cardStyles.artPlaceholder]} />
+          )}
+          {group.count > 1 && (
+            <View style={cardStyles.countBadge}>
+              <Text style={cardStyles.countBadgeText}>{group.count}</Text>
+            </View>
+          )}
         </View>
+
+        {/* Text content */}
+        <View style={cardStyles.content}>
+          <Text style={cardStyles.albumName} numberOfLines={1}>{group.albumName}</Text>
+          <Text style={cardStyles.artist} numberOfLines={1}>{group.artist}</Text>
+          <Text style={cardStyles.trackHint} numberOfLines={1}>
+            {group.count === 1
+              ? `${group.bookmarks[0].trackNum}. ${group.bookmarks[0].trackName}`
+              : group.bookmarks[0].trackName}
+          </Text>
+        </View>
+
+        {/* Play button (single) or chevron + play (multiple) */}
+        {group.count > 1 ? (
+          <Pressable
+            onPress={() => setExpanded(e => !e)}
+            hitSlop={8}
+            style={cardStyles.chevronBtn}
+          >
+            <MaterialIcons
+              name={expanded ? 'expand-less' : 'expand-more'}
+              size={22}
+              color={colors.outline}
+            />
+          </Pressable>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => onShareBookmark(group.bookmarks[0])}
+              hitSlop={8}
+              style={cardStyles.shareBtn}
+            >
+              <MaterialIcons name="share" size={16} color={colors.outline} />
+            </Pressable>
+            <Pressable onPress={onPlay} disabled={isPlaying} style={cardStyles.playBtn}>
+              <View style={cardStyles.playGradient}>
+                {isPlaying
+                  ? <ActivityIndicator color={colors.onPill} size="small" />
+                  : <MaterialIcons name="play-arrow" size={20} color={colors.onPill} />
+                }
+              </View>
+            </Pressable>
+          </>
+        )}
       </Pressable>
-    </Pressable>
+
+      {/* Expanded bookmark rows */}
+      {expanded && group.count > 1 && (
+        <View style={cardStyles.expandedSection}>
+          {group.bookmarks.map(bm => (
+            <View key={bm.trackUri} style={cardStyles.expandedRow}>
+              <Text style={cardStyles.expandedTrackNum}>
+                {String(bm.trackNum).padStart(2, '0')}
+              </Text>
+              <View style={cardStyles.expandedMeta}>
+                <Text style={cardStyles.expandedTrackName} numberOfLines={1}>{bm.trackName}</Text>
+                <View style={cardStyles.expandedBadges}>
+                  {bm.timestamp && (
+                    <View style={[cardStyles.expandedTsBadge, timestampBadgeStyle]}>
+                      <Text style={cardStyles.expandedTsText}>{bm.timestamp}</Text>
+                    </View>
+                  )}
+                  {bm.note && (
+                    <Pressable onPress={() => onEditNote(bm)} hitSlop={4}>
+                      <Text style={cardStyles.expandedNote} numberOfLines={1}>{bm.note}</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+              <Pressable
+                onPress={() => onShareBookmark(bm)}
+                hitSlop={8}
+                style={cardStyles.shareBtn}
+              >
+                <MaterialIcons name="share" size={16} color={colors.outline} />
+              </Pressable>
+              <Pressable
+                onPress={() => onPlayBookmark(bm)}
+                style={cardStyles.expandedPlayBtn}
+              >
+                <MaterialIcons name="play-arrow" size={18} color={colors.onPill} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -299,14 +424,80 @@ const emptyStyles = StyleSheet.create({
 
 const cardStyles = StyleSheet.create({
   card: {
-    flexDirection:    'row',
-    alignItems:       'center',
     marginHorizontal: spacing.lg,
     marginBottom:     spacing.sm,
-    padding:          spacing.md,
     borderRadius:     radius.xl,
     backgroundColor:  colors.surfaceContainer,
-    gap:              spacing.md,
+    overflow:         'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    padding:       spacing.md,
+    gap:           spacing.md,
+  },
+  chevronBtn: {
+    width:           44,
+    height:          44,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  expandedSection: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(80,68,64,0.3)',
+    paddingVertical: spacing.xs,
+  },
+  expandedRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.sm,
+    gap:               spacing.sm,
+  },
+  expandedTrackNum: {
+    ...typography.labelMd,
+    color:     colors.outline,
+    width:     22,
+    textAlign: 'right',
+  },
+  expandedMeta: {
+    flex: 1,
+    gap:  2,
+  },
+  expandedTrackName: {
+    ...typography.bodyMd,
+    color: colors.onSurface,
+  },
+  expandedBadges: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    flexWrap:      'wrap',
+    gap:           spacing.xs,
+  },
+  expandedTsBadge: {
+    alignSelf:         'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical:   2,
+    borderRadius:      radius.full,
+  },
+  expandedTsText: {
+    ...typography.labelMd,
+    color: colors.secondary,
+  },
+  expandedNote: {
+    ...typography.labelMd,
+    color:         colors.onSurfaceVariant,
+    letterSpacing: 0,
+    textTransform: 'none' as const,
+    fontWeight:    '400' as const,
+  },
+  expandedPlayBtn: {
+    width:           34,
+    height:          34,
+    borderRadius:    17,
+    backgroundColor: colors.pillBg,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
   artWrapper: {
     position: 'relative',
@@ -371,6 +562,12 @@ const cardStyles = StyleSheet.create({
     ...typography.labelSm,
     color: '#fff',
   },
+  shareBtn: {
+    width:           36,
+    height:          36,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
   playBtn: {
     borderRadius: radius.full,
     overflow:     'hidden',
@@ -396,7 +593,27 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     ...typography.labelMd,
-    color:     colors.outline,
-    marginTop: spacing.sm,
+    color: colors.outline,
+  },
+  sortRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    paddingHorizontal: spacing.lg,
+    marginTop:         spacing.sm,
+    marginBottom:      spacing.sm,
+  },
+  sortBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    backgroundColor:   colors.surfaceContainerHigh,
+    borderRadius:      radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.xs,
+  },
+  sortBtnText: {
+    ...typography.labelMd,
+    color: colors.outline,
   },
 });
