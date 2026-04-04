@@ -3,10 +3,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useSpotify } from '@/hooks/useSpotify';
+import { ProfileMenu } from '@/components/ProfileMenu';
 import { colors, typography, spacing } from '@/constants/theme';
 
 interface ScreenHeaderProps {
@@ -18,7 +20,8 @@ export function ScreenHeader({ title, rightSlot }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { getUserProfile, logout, ready } = useSpotify();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -27,14 +30,15 @@ export function ScreenHeader({ title, rightSlot }: ScreenHeaderProps) {
       .catch(() => {});
   }, [ready]);
 
-  const handleLogout = useCallback(() => {
+  const handleSignOut = useCallback(() => {
+    setMenuVisible(false);
     Alert.alert(
-      'Log Out',
+      'Sign Out',
       "You'll need to log back in to use NeedleDrop.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Log Out',
+          text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -45,21 +49,35 @@ export function ScreenHeader({ title, rightSlot }: ScreenHeaderProps) {
     );
   }, [logout, router]);
 
+  const handleHelp = useCallback(() => {
+    setMenuVisible(false);
+    // TODO: open help modal
+  }, []);
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
-      <Pressable
-        onPress={handleLogout}
-        style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}
-      >
-        {avatarUrl && (
-          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
-        )}
-      </Pressable>
+    <>
+      <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
+        <Pressable
+          onPress={() => setMenuVisible(true)}
+          style={[styles.avatar, !avatarUrl && styles.avatarPlaceholder]}
+        >
+          {avatarUrl && (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+          )}
+        </Pressable>
 
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <Text style={styles.title} numberOfLines={1}>{title}</Text>
 
-      {rightSlot && <View>{rightSlot}</View>}
-    </View>
+        {rightSlot && <View>{rightSlot}</View>}
+      </View>
+
+      <ProfileMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        onHelp={handleHelp}
+        onSignOut={handleSignOut}
+      />
+    </>
   );
 }
 
