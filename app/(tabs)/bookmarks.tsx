@@ -6,7 +6,6 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   ActionSheetIOS,
   Platform,
   Alert,
@@ -63,17 +62,12 @@ export default function BookmarksScreen() {
       .sort((a, b) => sortNewest ? b.savedAt - a.savedAt : a.savedAt - b.savedAt);
   }, [bookmarks, sortNewest]);
 
-  const { resume, loadingAlbumId } = usePlayback({
+  const { resume } = usePlayback({
     onSuccess:        () => showToast('Now playing!', 'success'),
     onOpeningSpotify: () => showToast('Opening Spotify…', 'default'),
     onError:          (msg) => showToast(msg, 'error'),
     onExpired:        () => showToast('Session expired — please log in again', 'error'),
   });
-
-  const handlePlay = useCallback((group: AlbumGroup) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    resume(group.bookmarks[0]); // most-recently-saved bookmark
-  }, [resume]);
 
   const handlePlayBookmark = useCallback((bm: Bookmark) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -195,8 +189,6 @@ export default function BookmarksScreen() {
         renderItem={({ item }) => (
           <SwipeableAlbumCard
             group={item}
-            isPlaying={loadingAlbumId === item.albumId}
-            onPlay={() => handlePlay(item)}
             onPlayBookmark={handlePlayBookmark}
             onShareBookmark={handleShareBookmark}
             onPress={() => router.push(`/album/${item.albumId}`)}
@@ -221,8 +213,6 @@ export default function BookmarksScreen() {
 
 function SwipeableAlbumCard(props: {
   group:            AlbumGroup;
-  isPlaying:        boolean;
-  onPlay:           () => void;
   onPlayBookmark:   (bm: Bookmark) => void;
   onShareBookmark:  (bm: Bookmark) => void;
   onPress:          () => void;
@@ -255,16 +245,12 @@ function SwipeableAlbumCard(props: {
 
 function AlbumCard({
   group,
-  isPlaying,
-  onPlay,
   onPlayBookmark,
   onShareBookmark,
   onPress,
   onEditNote,
 }: {
   group:           AlbumGroup;
-  isPlaying:       boolean;
-  onPlay:          () => void;
   onPlayBookmark:  (bm: Bookmark) => void;
   onShareBookmark: (bm: Bookmark) => void;
   onPress:         () => void;
