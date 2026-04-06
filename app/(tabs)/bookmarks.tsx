@@ -506,10 +506,8 @@ const cardStyles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   countBadgeText: {
-    ...typography.labelLg,
-    fontWeight:         '800',
-    letterSpacing:      0,
-    textTransform:      'none' as const,
+    fontSize:           12,
+    fontWeight:         '800' as const,
     color:              colors.secondary,
     textAlign:          'center',
     textAlignVertical:  'center',
