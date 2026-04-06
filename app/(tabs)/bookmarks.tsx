@@ -305,38 +305,20 @@ function AlbumCard({
           </Text>
         </View>
 
-        {/* Play button (single) or chevron + play (multiple) */}
-        {group.count > 1 ? (
-          <Pressable
-            onPress={() => setExpanded(e => !e)}
-            hitSlop={8}
-            style={cardStyles.chevronBtn}
-          >
-            <MaterialIcons
-              name={expanded ? 'expand-less' : 'expand-more'}
-              size={22}
-              color={colors.outline}
-            />
-          </Pressable>
-        ) : (
-          <>
-            <Pressable
-              onPress={() => onShareBookmark(group.bookmarks[0])}
-              hitSlop={8}
-              style={cardStyles.shareBtn}
-            >
-              <MaterialIcons name="share" size={16} color={colors.outline} />
-            </Pressable>
-            <Pressable onPress={onPlay} disabled={isPlaying} style={cardStyles.playBtn}>
-              <View style={cardStyles.playGradient}>
-                {isPlaying
-                  ? <ActivityIndicator color={colors.onPill} size="small" />
-                  : <MaterialIcons name="play-arrow" size={20} color={colors.onPill} />
-                }
-              </View>
-            </Pressable>
-          </>
-        )}
+        <Pressable
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setExpanded(e => !e);
+          }}
+          hitSlop={8}
+          style={cardStyles.chevronBtn}
+        >
+          <MaterialIcons
+            name={expanded ? 'expand-less' : 'expand-more'}
+            size={22}
+            color={colors.outline}
+          />
+        </Pressable>
       </Pressable>
 
       {/* Expanded bookmark rows */}
