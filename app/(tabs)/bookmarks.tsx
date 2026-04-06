@@ -11,6 +11,8 @@ import {
   Platform,
   Alert,
   Share,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -28,6 +30,10 @@ import {
   colors, typography, spacing, radius, shadows,
   TAB_BAR_HEIGHT, timestampBadgeStyle,
 } from '@/constants/theme';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface AlbumGroup extends Bookmark {
   bookmarks: Bookmark[];
