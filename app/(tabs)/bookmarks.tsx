@@ -322,10 +322,18 @@ function AlbumCard({
       </Pressable>
 
       {/* Expanded bookmark rows */}
-      {expanded && group.count > 1 && (
+      {expanded && (
         <View style={cardStyles.expandedSection}>
           {group.bookmarks.map(bm => (
-            <View key={bm.trackUri} style={cardStyles.expandedRow}>
+            <Pressable
+              key={bm.trackUri}
+              style={cardStyles.expandedRow}
+              onLongPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onEditNote(bm);
+              }}
+              delayLongPress={400}
+            >
               <Text style={cardStyles.expandedTrackNum}>
                 {String(bm.trackNum).padStart(2, '0')}
               </Text>
@@ -357,7 +365,7 @@ function AlbumCard({
               >
                 <MaterialIcons name="play-arrow" size={18} color={colors.onPill} />
               </Pressable>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
